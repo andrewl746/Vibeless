@@ -1,21 +1,21 @@
 "use client"
 
-import { useState } from "react"
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react"
 import NodeOverlay from "./NodeOverlay"
+import { useNodeHover } from "./useNodeHover"
 import type { GraphNodeData } from "./types"
 
 type ProjectNodeType = Node<GraphNodeData>
 
 export default function ProjectNode({ data, selected, id }: NodeProps<ProjectNodeType>) {
-  const [hovered, setHovered] = useState(false)
+  const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id)
   const showOverlay = selected || hovered
 
   return (
     <div
       className="relative flex items-center justify-center"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       style={{ width: 120, height: 104 }}
     >
       <div

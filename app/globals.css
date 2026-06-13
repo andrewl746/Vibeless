@@ -4,14 +4,42 @@
 .react-flow__background {
   background-color: #06090E !important;
 }
+
+/* Controls bar */
+.react-flow__controls {
+  background: #090D14 !important;
+  border: 1px solid #141B24 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
 .react-flow__controls button {
   background: #090D14 !important;
-  border-color: #141B24 !important;
+  border: none !important;
+  border-bottom: 1px solid #141B24 !important;
   color: #4B5E74 !important;
+  fill: #4B5E74 !important;
+  width: 26px !important;
+  height: 26px !important;
+}
+.react-flow__controls button:last-child {
+  border-bottom: none !important;
 }
 .react-flow__controls button:hover {
   background: #141B24 !important;
   color: #ffffff !important;
+  fill: #ffffff !important;
+}
+.react-flow__controls button svg {
+  fill: inherit !important;
+}
+
+/* Allow node overlays to overflow their node box and appear on top */
+.react-flow__node {
+  overflow: visible !important;
+}
+/* Elevate a node above its siblings when it carries the hovered class */
+.react-flow__node.node-hovered {
+  z-index: 9999 !important;
 }
 
 @theme inline {

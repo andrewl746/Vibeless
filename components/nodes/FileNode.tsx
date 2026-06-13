@@ -1,14 +1,14 @@
 "use client"
 
-import { useState } from "react"
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react"
 import NodeOverlay from "./NodeOverlay"
+import { useNodeHover } from "./useNodeHover"
 import type { GraphNodeData } from "./types"
 
 type FileNodeType = Node<GraphNodeData & { zoomLevel?: number }>
 
 export default function FileNode({ data, selected, id }: NodeProps<FileNodeType>) {
-  const [hovered, setHovered] = useState(false)
+  const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id)
   const showOverlay = selected || hovered
   const showDetails = (data.zoomLevel ?? 1) >= 0.5
 
@@ -23,8 +23,8 @@ export default function FileNode({ data, selected, id }: NodeProps<FileNodeType>
         borderRadius: 4,
         boxShadow: selected ? "0 0 14px rgba(0,163,255,0.2)" : "0 0 6px rgba(0,163,255,0.06)",
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       <span className="font-mono text-[9px] text-[#00A3FF] uppercase tracking-widest pointer-events-none select-none">
         FILE

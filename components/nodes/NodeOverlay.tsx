@@ -29,22 +29,22 @@ export default function NodeOverlay({ id, data }: NodeOverlayProps) {
   return (
     <>
       {/* Inline floating menu */}
-      <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 flex gap-1 pointer-events-auto">
+      <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 flex flex-col gap-1 pointer-events-auto">
         <button
           onClick={() => setModal("desc")}
-          className="font-mono text-[10px] px-2 py-0.5 bg-bg-deep border border-border-muted text-text-muted hover:text-white hover:border-accent-blue transition-colors rounded"
+          className="font-mono text-[10px] px-2 py-0.5 bg-bg-deep border border-border-muted text-text-muted hover:text-white hover:border-accent-blue transition-colors rounded whitespace-nowrap"
         >
           [ DESC ]
         </button>
         <button
           onClick={() => setModal("code")}
-          className="font-mono text-[10px] px-2 py-0.5 bg-bg-deep border border-border-muted text-text-muted hover:text-white hover:border-accent-blue transition-colors rounded"
+          className="font-mono text-[10px] px-2 py-0.5 bg-bg-deep border border-border-muted text-text-muted hover:text-white hover:border-accent-blue transition-colors rounded whitespace-nowrap"
         >
           [ CODE ]
         </button>
         <button
           onClick={handleTraceUsage}
-          className="font-mono text-[10px] px-2 py-0.5 bg-bg-deep border border-border-muted text-text-muted hover:text-white hover:border-green-500 transition-colors rounded"
+          className="font-mono text-[10px] px-2 py-0.5 bg-bg-deep border border-border-muted text-text-muted hover:text-white hover:border-green-500 transition-colors rounded whitespace-nowrap"
         >
           [ TRACE USAGE ]
         </button>

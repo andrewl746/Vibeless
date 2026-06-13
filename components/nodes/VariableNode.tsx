@@ -1,14 +1,14 @@
 "use client"
 
-import { useState } from "react"
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react"
 import NodeOverlay from "./NodeOverlay"
+import { useNodeHover } from "./useNodeHover"
 import type { GraphNodeData } from "./types"
 
 type VariableNodeType = Node<GraphNodeData & { zoomLevel?: number }>
 
 export default function VariableNode({ data, selected, id }: NodeProps<VariableNodeType>) {
-  const [hovered, setHovered] = useState(false)
+  const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id)
   const showOverlay = selected || hovered
   const visible = (data.zoomLevel ?? 1) >= 1.5
 
@@ -18,8 +18,8 @@ export default function VariableNode({ data, selected, id }: NodeProps<VariableN
     <div
       className="relative flex items-center justify-center"
       style={{ width: 64, height: 64 }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       <div
         className="absolute inset-0 rounded-full"
