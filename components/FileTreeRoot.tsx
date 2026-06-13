@@ -2,12 +2,15 @@
 
 import type { FileTreeNode } from "@/utils/parseTree"
 import FileTreeItem from "./FileTreeItem"
+import { useCanvasStore } from "@/store/useCanvasStore"
 
 interface FileTreeRootProps {
   tree: FileTreeNode[]
 }
 
 export default function FileTreeRoot({ tree }: FileTreeRootProps) {
+  const { activeNode, setActiveNode } = useCanvasStore()
+
   if (tree.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 px-4 py-8 text-center">
@@ -24,7 +27,13 @@ export default function FileTreeRoot({ tree }: FileTreeRootProps) {
   return (
     <div className="flex flex-col py-2">
       {tree.map((node) => (
-        <FileTreeItem key={node.path} node={node} depth={0} />
+        <FileTreeItem
+          key={node.path}
+          node={node}
+          depth={0}
+          activePath={activeNode?.path ?? null}
+          onSelect={setActiveNode}
+        />
       ))}
     </div>
   )

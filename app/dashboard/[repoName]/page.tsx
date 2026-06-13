@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import DashboardNav from "@/components/DashboardNav"
 import FileTreeRoot from "@/components/FileTreeRoot"
+import CanvasPreview from "@/components/CanvasPreview"
+import MascotPanel from "@/components/MascotPanel"
 import { fetchRepoTree, fetchAuthenticatedUser } from "@/lib/github"
 import { parseTree } from "@/utils/parseTree"
 
@@ -17,7 +19,6 @@ export default async function RepoPage({
   const { repoName } = await params
   const decoded = decodeURIComponent(repoName)
 
-  // Resolve owner login — prefer session.login set at sign-in, fall back to API
   const ownerLogin =
     session.login ?? (await fetchAuthenticatedUser(session.accessToken)).login
 
@@ -31,10 +32,9 @@ export default async function RepoPage({
         userImage={session.user?.image}
       />
 
-      {/* Three-panel workspace */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* Left Sidebar — file tree */}
+        {/* Left Sidebar — file tree (all files visible) */}
         <aside className="w-64 shrink-0 flex flex-col border-r border-border-muted bg-bg-panel overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 border-b border-border-muted shrink-0">
             <span className="font-mono text-xs text-text-muted uppercase tracking-widest">
@@ -57,31 +57,14 @@ export default async function RepoPage({
           </div>
         </aside>
 
-        {/* Center Workspace — placeholder */}
+        {/* Center Workspace — canvas preview */}
         <main className="flex-1 flex flex-col items-center justify-center overflow-hidden">
-          <div className="flex flex-col items-center gap-3 text-center px-8">
-            <span className="font-mono text-xs text-text-muted uppercase tracking-widest">
-              [ CENTER WORKSPACE ]
-            </span>
-            <p className="font-mono text-xs text-text-muted leading-relaxed">
-              REPOSITORY SELECTED: {decoded}.<br />
-              File hierarchy loading architecture placeholder.
-            </p>
-          </div>
+          <CanvasPreview />
         </main>
 
-        {/* Right Sidebar — placeholder */}
+        {/* Right Sidebar — mascot + inspector */}
         <aside className="w-56 shrink-0 flex flex-col border-l border-border-muted bg-bg-panel overflow-hidden">
-          <div className="flex items-center px-3 py-2 border-b border-border-muted shrink-0">
-            <span className="font-mono text-xs text-text-muted uppercase tracking-widest">
-              [ INSPECTOR ]
-            </span>
-          </div>
-          <div className="flex-1 flex items-center justify-center">
-            <span className="font-mono text-xs text-text-muted">
-              — select a file —
-            </span>
-          </div>
+          <MascotPanel />
         </aside>
 
       </div>

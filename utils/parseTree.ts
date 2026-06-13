@@ -7,6 +7,26 @@ export interface FileTreeNode {
   children?: FileTreeNode[]
 }
 
+const GRAPH_BLACKLIST = new Set([
+  '.gitignore', 'package.json', 'package-lock.json', 'tsconfig.json',
+  'favicon.ico', 'next.config.ts', 'postcss.config.mjs', 'eslint.config.mjs',
+  '.DS_Store', 'README.md',
+])
+
+const SOURCE_EXTENSIONS = new Set([
+  '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.java', '.rb', '.php',
+  '.c', '.cpp', '.h', '.cs', '.swift', '.kt', '.vue', '.svelte', '.mjs', '.cjs',
+])
+
+export function isGraphNode(node: FileTreeNode): boolean {
+  if (node.type === 'folder') return true
+  const name = node.name
+  if (GRAPH_BLACKLIST.has(name)) return false
+  const dot = name.lastIndexOf('.')
+  if (dot === -1) return false
+  return SOURCE_EXTENSIONS.has(name.slice(dot))
+}
+
 export function parseTree(items: GitHubTreeItem[]): FileTreeNode[] {
   const root: FileTreeNode[] = []
 

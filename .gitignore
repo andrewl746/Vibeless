@@ -43,5 +43,6 @@ next-env.d.ts
 # Ignore all Markdown files
 *.md
 
-# Except README.md
+# Except README.md and architecture specs
 !README.md
+!ARCHITECTURE_*.md
