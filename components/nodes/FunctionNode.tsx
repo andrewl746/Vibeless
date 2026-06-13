@@ -10,9 +10,6 @@ type FunctionNodeType = Node<GraphNodeData & { zoomLevel?: number }>
 export default function FunctionNode({ data, selected, id }: NodeProps<FunctionNodeType>) {
   const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id, "function")
   const showOverlay = selected || hovered
-  const visible = (data.zoomLevel ?? 1) >= 1.0
-
-  if (!visible) return null
 
   return (
     <div

@@ -20,6 +20,7 @@ import "@xyflow/react/dist/style.css"
 
 import { useGraphStore } from "@/store/useGraphStore"
 import { useCanvasStore } from "@/store/useCanvasStore"
+import { layoutGraph } from "@/utils/layout"
 import IsolationOverlay from "./IsolationOverlay"
 import SearchBar from "./SearchBar"
 import ProjectNode from "@/components/nodes/ProjectNode"
@@ -27,7 +28,7 @@ import FolderNode from "@/components/nodes/FolderNode"
 import FileNode from "@/components/nodes/FileNode"
 import FunctionNode from "@/components/nodes/FunctionNode"
 import VariableNode from "@/components/nodes/VariableNode"
-import type { GraphNodeData } from "@/components/nodes/types"
+import type { GraphNodeData, NodeKind } from "@/components/nodes/types"
 
 export interface CanvasEngineHandle {
   focusNode: (nodeId: string) => void
@@ -41,28 +42,14 @@ const nodeTypes: NodeTypes = {
   variableNode: VariableNode as NodeTypes[string],
 }
 
-function applySemanticZoom(nodes: Node<GraphNodeData>[], zoom: number): Node<GraphNodeData>[] {
-  return nodes.map((n) => {
-    const kind = n.data.kind
-    let hidden = false
-    if (zoom < 0.6) {
-      // Only folders and files
-      hidden = kind === "function" || kind === "variable" || kind === "project"
-    } else if (zoom < 1.2) {
-      // Folders, files, and functions
-      hidden = kind === "variable"
-    }
-    // zoom >= 1.2: all visible
-    return hidden === n.hidden ? n : { ...n, hidden }
-  })
-}
-
 const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, ref) {
   const storeNodes = useGraphStore((s) => s.nodes) as Node<GraphNodeData>[]
   const storeEdges = useGraphStore((s) => s.edges)
   const setZoomLevel = useGraphStore((s) => s.setZoomLevel)
   const zoomLevel = useGraphStore((s) => s.zoomLevel)
   const setStoreNodes = useGraphStore((s) => s.setNodes)
+  const hoveredFileId = useGraphStore((s) => s.hoveredFileId)
+  const isIsolationMode = useGraphStore((s) => s.isIsolationMode)
 
   const activeNode = useCanvasStore((s) => s.activeNode)
 
@@ -71,13 +58,46 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
 
   const { setCenter, getNode } = useReactFlow()
 
-  useEffect(() => {
-    setNodes(applySemanticZoom(storeNodes, zoomLevel))
-  }, [storeNodes, zoomLevel, setNodes])
+  // Only the zoom *tier* matters for visibility — depend on that, not the raw
+  // (continuously changing) zoom value, so dagre doesn't re-run every frame.
+  const zoomTier = zoomLevel >= 1.2 ? 2 : zoomLevel >= 0.6 ? 1 : 0
 
+  // Compute the visible node set and lay it out with dagre. Re-runs only when
+  // the graph, the zoom tier, the hovered file, or isolation state changes.
   useEffect(() => {
-    setEdges(storeEdges)
-  }, [storeEdges, setEdges])
+    const kindById = new Map<string, NodeKind>(
+      storeNodes.map((n) => [n.id, n.data.kind])
+    )
+
+    // Map each function/variable to its structural parent (the file it lives in)
+    const parentById = new Map<string, string>()
+    for (const e of storeEdges) {
+      const sk = kindById.get(e.source)
+      if (sk === "file" || sk === "folder" || sk === "project") {
+        parentById.set(e.target, e.source)
+      }
+    }
+
+    const visible = storeNodes.filter((n) => {
+      const k = n.data.kind
+      if (isIsolationMode) return true
+      if (k !== "function" && k !== "variable") return true
+      // Functions/variables: revealed when their parent file is hovered, or
+      // when zoomed in past the semantic threshold.
+      const parent = parentById.get(n.id)
+      if (hoveredFileId && parent === hoveredFileId) return true
+      if (k === "function") return zoomTier >= 1
+      return zoomTier >= 2 // variable
+    })
+
+    const visibleIds = new Set(visible.map((n) => n.id))
+    const visibleEdges = storeEdges.filter(
+      (e) => visibleIds.has(e.source) && visibleIds.has(e.target)
+    )
+
+    setNodes(layoutGraph(visible, visibleEdges))
+    setEdges(visibleEdges)
+  }, [storeNodes, storeEdges, zoomTier, hoveredFileId, isIsolationMode, setNodes, setEdges])
 
   useOnViewportChange({
     onChange: useCallback(
@@ -86,6 +106,7 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
     ),
   })
 
+  // Sidebar selection → camera focus
   useEffect(() => {
     if (!activeNode) return
     const matchId = `node::${activeNode.path}`
@@ -115,6 +136,7 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
     [storeNodes, setStoreNodes]
   )
 
+  // Inject the raw zoom so nodes can show/hide their detail text
   const enrichedNodes = useMemo(
     () => nodes.map((n) => ({ ...n, data: { ...n.data, zoomLevel } })),
     [nodes, zoomLevel]
