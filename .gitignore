@@ -45,4 +45,3 @@ next-env.d.ts
 
 # Except README.md and architecture specs
 !README.md
-!ARCHITECTURE_*.md
