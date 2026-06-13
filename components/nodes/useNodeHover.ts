@@ -9,12 +9,12 @@ export function useNodeHover(id: string) {
 
   const onMouseEnter = useCallback(() => {
     setHovered(true)
-    updateNode(id, { className: "node-hovered" })
+    updateNode(id, { zIndex: 9999 })
   }, [id, updateNode])
 
   const onMouseLeave = useCallback(() => {
     setHovered(false)
-    updateNode(id, { className: "" })
+    updateNode(id, { zIndex: 0 })
   }, [id, updateNode])
 
   return { hovered, onMouseEnter, onMouseLeave }

@@ -148,6 +148,7 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
       >
         <Background color="#141B24" gap={24} size={1} />
         <Controls
+          showInteractive={false}
           style={{
             background: "#090D14",
             border: "1px solid #141B24",
