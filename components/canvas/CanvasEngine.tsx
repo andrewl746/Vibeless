@@ -28,7 +28,7 @@ import FolderNode from "@/components/nodes/FolderNode"
 import FileNode from "@/components/nodes/FileNode"
 import FunctionNode from "@/components/nodes/FunctionNode"
 import VariableNode from "@/components/nodes/VariableNode"
-import type { GraphNodeData, NodeKind } from "@/components/nodes/types"
+import type { GraphNodeData } from "@/components/nodes/types"
 
 export interface CanvasEngineHandle {
   focusNode: (nodeId: string) => void
@@ -48,7 +48,6 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   const setZoomLevel = useGraphStore((s) => s.setZoomLevel)
   const zoomLevel = useGraphStore((s) => s.zoomLevel)
   const setStoreNodes = useGraphStore((s) => s.setNodes)
-  const hoveredFileId = useGraphStore((s) => s.hoveredFileId)
   const isIsolationMode = useGraphStore((s) => s.isIsolationMode)
 
   const activeNode = useCanvasStore((s) => s.activeNode)
@@ -63,29 +62,13 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   const zoomTier = zoomLevel >= 1.2 ? 2 : zoomLevel >= 0.6 ? 1 : 0
 
   // Compute the visible node set and lay it out with dagre. Re-runs only when
-  // the graph, the zoom tier, the hovered file, or isolation state changes.
+  // the graph, the zoom tier, or isolation state changes — never on hover.
   useEffect(() => {
-    const kindById = new Map<string, NodeKind>(
-      storeNodes.map((n) => [n.id, n.data.kind])
-    )
-
-    // Map each function/variable to its structural parent (the file it lives in)
-    const parentById = new Map<string, string>()
-    for (const e of storeEdges) {
-      const sk = kindById.get(e.source)
-      if (sk === "file" || sk === "folder" || sk === "project") {
-        parentById.set(e.target, e.source)
-      }
-    }
-
     const visible = storeNodes.filter((n) => {
       const k = n.data.kind
       if (isIsolationMode) return true
       if (k !== "function" && k !== "variable") return true
-      // Functions/variables: revealed when their parent file is hovered, or
-      // when zoomed in past the semantic threshold.
-      const parent = parentById.get(n.id)
-      if (hoveredFileId && parent === hoveredFileId) return true
+      // Functions/variables are revealed purely by zooming in.
       if (k === "function") return zoomTier >= 1
       return zoomTier >= 2 // variable
     })
@@ -97,7 +80,7 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
 
     setNodes(layoutGraph(visible, visibleEdges))
     setEdges(visibleEdges)
-  }, [storeNodes, storeEdges, zoomTier, hoveredFileId, isIsolationMode, setNodes, setEdges])
+  }, [storeNodes, storeEdges, zoomTier, isIsolationMode, setNodes, setEdges])
 
   useOnViewportChange({
     onChange: useCallback(

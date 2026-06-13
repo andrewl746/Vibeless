@@ -19,13 +19,11 @@ interface GraphStore {
   isolationTargetKind: NodeKind | null
   activeIsolationTarget: string | null
   zoomLevel: number
-  hoveredFileId: string | null
   allScannedEntities: ScannedEntityMap
 
   setNodes: (nodes: Node[]) => void
   setEdges: (edges: Edge[]) => void
   setZoomLevel: (zoom: number) => void
-  setHoveredFileId: (id: string | null) => void
   setScannedEntities: (map: ScannedEntityMap) => void
   enterIsolationMode: (
     targetNodeId: string,
@@ -46,13 +44,11 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   isolationTargetKind: null,
   activeIsolationTarget: null,
   zoomLevel: 1,
-  hoveredFileId: null,
   allScannedEntities: {},
 
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
   setZoomLevel: (zoom) => set({ zoomLevel: zoom }),
-  setHoveredFileId: (id) => set({ hoveredFileId: id }),
   setScannedEntities: (map) => set({ allScannedEntities: map }),
 
   enterIsolationMode: (targetNodeId, targetName, targetKind, dependencies, dependencyEdges) => {
