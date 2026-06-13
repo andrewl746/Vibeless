@@ -8,7 +8,7 @@ import type { GraphNodeData } from "./types"
 type FolderNodeType = Node<GraphNodeData & { zoomLevel?: number }>
 
 export default function FolderNode({ data, selected, id }: NodeProps<FolderNodeType>) {
-  const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id)
+  const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id, "folder")
   const showOverlay = selected || hovered
   const showDetails = (data.zoomLevel ?? 1) >= 0.5
 

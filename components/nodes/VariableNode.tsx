@@ -8,7 +8,7 @@ import type { GraphNodeData } from "./types"
 type VariableNodeType = Node<GraphNodeData & { zoomLevel?: number }>
 
 export default function VariableNode({ data, selected, id }: NodeProps<VariableNodeType>) {
-  const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id)
+  const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id, "variable")
   const showOverlay = selected || hovered
   const visible = (data.zoomLevel ?? 1) >= 1.5
 

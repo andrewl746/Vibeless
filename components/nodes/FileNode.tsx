@@ -8,7 +8,7 @@ import type { GraphNodeData } from "./types"
 type FileNodeType = Node<GraphNodeData & { zoomLevel?: number }>
 
 export default function FileNode({ data, selected, id }: NodeProps<FileNodeType>) {
-  const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id)
+  const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id, "file")
   const showOverlay = selected || hovered
   const showDetails = (data.zoomLevel ?? 1) >= 0.5
 

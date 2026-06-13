@@ -8,7 +8,7 @@ import type { GraphNodeData } from "./types"
 type ProjectNodeType = Node<GraphNodeData>
 
 export default function ProjectNode({ data, selected, id }: NodeProps<ProjectNodeType>) {
-  const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id)
+  const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id, "project")
   const showOverlay = selected || hovered
 
   return (

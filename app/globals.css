@@ -36,10 +36,7 @@
 /* Allow node overlays to overflow their node box and appear on top */
 .react-flow__node {
   overflow: visible !important;
-}
-/* Elevate a node above its siblings when it carries the hovered class */
-.react-flow__node.node-hovered {
-  z-index: 9999 !important;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 @theme inline {
