@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/* Override React Flow background to match theme */
+.react-flow__background {
+  background-color: #06090E !important;
+}
+.react-flow__controls button {
+  background: #090D14 !important;
+  border-color: #141B24 !important;
+  color: #4B5E74 !important;
+}
+.react-flow__controls button:hover {
+  background: #141B24 !important;
+  color: #ffffff !important;
+}
+
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

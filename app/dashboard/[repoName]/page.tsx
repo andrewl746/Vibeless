@@ -57,8 +57,8 @@ export default async function RepoPage({
           </div>
         </aside>
 
-        {/* Center Workspace — canvas preview */}
-        <main className="flex-1 flex flex-col items-center justify-center overflow-hidden">
+        {/* Center Workspace — canvas engine */}
+        <main className="flex-1 relative overflow-hidden">
           <CanvasPreview />
         </main>
 
