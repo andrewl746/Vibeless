@@ -45,13 +45,14 @@ function applySemanticZoom(nodes: Node<GraphNodeData>[], zoom: number): Node<Gra
   return nodes.map((n) => {
     const kind = n.data.kind
     let hidden = false
-    if (zoom < 0.5) {
-      hidden = kind === "file" || kind === "function" || kind === "variable"
-    } else if (zoom < 1.0) {
-      hidden = kind === "function" || kind === "variable"
-    } else if (zoom < 1.5) {
+    if (zoom < 0.6) {
+      // Only folders and files
+      hidden = kind === "function" || kind === "variable" || kind === "project"
+    } else if (zoom < 1.2) {
+      // Folders, files, and functions
       hidden = kind === "variable"
     }
+    // zoom >= 1.2: all visible
     return hidden === n.hidden ? n : { ...n, hidden }
   })
 }

@@ -2,6 +2,8 @@
 
 import { create } from "zustand"
 import type { Node, Edge } from "@xyflow/react"
+import type { ScannedEntityMap } from "@/utils/codeScanner"
+import type { NodeKind } from "@/components/nodes/types"
 
 interface GraphSnapshot {
   nodes: Node[]
@@ -14,12 +16,22 @@ interface GraphStore {
   mainGraphSnapshot: GraphSnapshot | null
   isIsolationMode: boolean
   isolationTargetName: string | null
+  isolationTargetKind: NodeKind | null
+  activeIsolationTarget: string | null
   zoomLevel: number
+  allScannedEntities: ScannedEntityMap
 
   setNodes: (nodes: Node[]) => void
   setEdges: (edges: Edge[]) => void
   setZoomLevel: (zoom: number) => void
-  enterIsolationMode: (targetNodeId: string, targetName: string, dependencies: Node[], dependencyEdges: Edge[]) => void
+  setScannedEntities: (map: ScannedEntityMap) => void
+  enterIsolationMode: (
+    targetNodeId: string,
+    targetName: string,
+    targetKind: NodeKind,
+    dependencies: Node[],
+    dependencyEdges: Edge[]
+  ) => void
   exitIsolationMode: () => void
 }
 
@@ -29,18 +41,24 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   mainGraphSnapshot: null,
   isIsolationMode: false,
   isolationTargetName: null,
+  isolationTargetKind: null,
+  activeIsolationTarget: null,
   zoomLevel: 1,
+  allScannedEntities: {},
 
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
   setZoomLevel: (zoom) => set({ zoomLevel: zoom }),
+  setScannedEntities: (map) => set({ allScannedEntities: map }),
 
-  enterIsolationMode: (targetNodeId, targetName, dependencies, dependencyEdges) => {
+  enterIsolationMode: (targetNodeId, targetName, targetKind, dependencies, dependencyEdges) => {
     const { nodes, edges } = get()
     set({
       mainGraphSnapshot: { nodes, edges },
       isIsolationMode: true,
       isolationTargetName: targetName,
+      isolationTargetKind: targetKind,
+      activeIsolationTarget: targetNodeId,
       nodes: dependencies,
       edges: dependencyEdges,
     })
@@ -55,6 +73,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       mainGraphSnapshot: null,
       isIsolationMode: false,
       isolationTargetName: null,
+      isolationTargetKind: null,
+      activeIsolationTarget: null,
     })
   },
 }))

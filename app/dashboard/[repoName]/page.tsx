@@ -59,7 +59,7 @@ export default async function RepoPage({
 
         {/* Center Workspace — canvas engine */}
         <main className="flex-1 relative overflow-hidden">
-          <CanvasPreview />
+          <CanvasPreview owner={ownerLogin} repo={decoded} />
         </main>
 
         {/* Right Sidebar — mascot + inspector */}
