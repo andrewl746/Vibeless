@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useImperativeHandle, forwardRef, useMemo } from "react"
+import { useCallback, useEffect, useImperativeHandle, forwardRef, useMemo, useRef } from "react"
 import {
   ReactFlow,
   Background,
@@ -55,7 +55,12 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<GraphNodeData>>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
 
-  const { setCenter, getNode } = useReactFlow()
+  const { setCenter, getNode, fitView } = useReactFlow()
+
+  // When the sidebar selection changes we want to reset the canvas to a fresh
+  // fitted view. The actual fitView() runs in the layout effect below, once the
+  // new graph has been laid out.
+  const fitPendingRef = useRef(false)
 
   // Only the zoom *tier* matters for visibility — depend on that, not the raw
   // (continuously changing) zoom value, so dagre doesn't re-run every frame.
@@ -80,7 +85,14 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
 
     setNodes(layoutGraph(visible, visibleEdges))
     setEdges(visibleEdges)
-  }, [storeNodes, storeEdges, zoomTier, isIsolationMode, setNodes, setEdges])
+
+    // After a sidebar selection rebuilds the graph, reset to a fresh fitted
+    // view (recenter + default zoom, collapsing functions/variables).
+    if (fitPendingRef.current) {
+      fitPendingRef.current = false
+      requestAnimationFrame(() => fitView({ duration: 600, padding: 0.2 }))
+    }
+  }, [storeNodes, storeEdges, zoomTier, isIsolationMode, setNodes, setEdges, fitView])
 
   useOnViewportChange({
     onChange: useCallback(
@@ -89,15 +101,11 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
     ),
   })
 
-  // Sidebar selection → camera focus
+  // Sidebar selection → flag a fresh fit; the layout effect performs it once
+  // the rebuilt graph has been laid out.
   useEffect(() => {
-    if (!activeNode) return
-    const matchId = `node::${activeNode.path}`
-    const rfNode = getNode(matchId)
-    if (rfNode) {
-      setCenter(rfNode.position.x + 80, rfNode.position.y + 30, { zoom: 1.2, duration: 600 })
-    }
-  }, [activeNode, setCenter, getNode])
+    fitPendingRef.current = true
+  }, [activeNode])
 
   useImperativeHandle(ref, () => ({
     focusNode: (nodeId: string) => {

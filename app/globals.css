@@ -33,6 +33,12 @@
   fill: inherit !important;
 }
 
+/* Edges are visual only — let clicks/drags pass through to the pane so the
+   canvas can be panned by grabbing anywhere, including over connecting lines */
+.react-flow__edge {
+  pointer-events: none !important;
+}
+
 /* Allow node overlays to overflow their node box and appear on top */
 .react-flow__node {
   overflow: visible !important;
