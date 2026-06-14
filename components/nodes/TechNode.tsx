@@ -1,18 +1,16 @@
 "use client"
 
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react"
-import type { IconType } from "react-icons"
 import {
-  SiTypescript, SiJavascript, SiNextdotjs, SiReact, SiVuedotjs, SiSvelte,
-  SiAngular, SiAstro, SiGatsby, SiRemix, SiSolid, SiPreact, SiExpress,
-  SiFastify, SiNestjs, SiTailwindcss, SiStyledcomponents, SiSass, SiBootstrap,
-  SiMui, SiChakraui, SiRedux, SiReactquery, SiMobx, SiFirebase, SiSupabase,
-  SiMongoose, SiMongodb, SiPostgresql, SiMysql, SiPrisma, SiDrizzle, SiRedis,
-  SiOpenai, SiAnthropic, SiMarkdown, SiThreedotjs, SiFramer, SiAxios, SiZod,
-  SiSwr, SiPython, SiGo, SiRust, SiRuby, SiPhp, SiKotlin, SiEslint, SiPrettier,
-  SiVite, SiWebpack, SiJest, SiVitest, SiCypress, SiTurborepo, SiDocker,
-  SiGithubactions, SiRecoil,
-} from "react-icons/si"
+  Blocks,
+  Braces,
+  Code2,
+  Database,
+  Layers3,
+  Paintbrush,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react"
 import type { GraphNodeData } from "./types"
 import type { TechCategory } from "@/utils/techStack"
 
@@ -28,73 +26,20 @@ const CATEGORY_COLOR: Record<TechCategory, string> = {
   tooling: "#4B5E74",
 }
 
-// Tech display name → brand icon. Anything not listed falls back to a dot.
-const TECH_ICON: Record<string, IconType> = {
-  TypeScript: SiTypescript,
-  JavaScript: SiJavascript,
-  "Next.js": SiNextdotjs,
-  React: SiReact,
-  Vue: SiVuedotjs,
-  Svelte: SiSvelte,
-  Angular: SiAngular,
-  Astro: SiAstro,
-  Gatsby: SiGatsby,
-  Remix: SiRemix,
-  SolidJS: SiSolid,
-  Preact: SiPreact,
-  Express: SiExpress,
-  Fastify: SiFastify,
-  NestJS: SiNestjs,
-  "Tailwind CSS": SiTailwindcss,
-  "styled-components": SiStyledcomponents,
-  Sass: SiSass,
-  Bootstrap: SiBootstrap,
-  MUI: SiMui,
-  "Chakra UI": SiChakraui,
-  Redux: SiRedux,
-  "Redux Toolkit": SiRedux,
-  "React Query": SiReactquery,
-  MobX: SiMobx,
-  Recoil: SiRecoil,
-  Firebase: SiFirebase,
-  Supabase: SiSupabase,
-  Mongoose: SiMongoose,
-  MongoDB: SiMongodb,
-  PostgreSQL: SiPostgresql,
-  MySQL: SiMysql,
-  Prisma: SiPrisma,
-  Drizzle: SiDrizzle,
-  Redis: SiRedis,
-  "OpenAI SDK": SiOpenai,
-  "Anthropic SDK": SiAnthropic,
-  "react-markdown": SiMarkdown,
-  "Three.js": SiThreedotjs,
-  "Framer Motion": SiFramer,
-  Axios: SiAxios,
-  Zod: SiZod,
-  SWR: SiSwr,
-  Python: SiPython,
-  Go: SiGo,
-  Rust: SiRust,
-  Ruby: SiRuby,
-  PHP: SiPhp,
-  Kotlin: SiKotlin,
-  ESLint: SiEslint,
-  Prettier: SiPrettier,
-  Vite: SiVite,
-  Webpack: SiWebpack,
-  Jest: SiJest,
-  Vitest: SiVitest,
-  Cypress: SiCypress,
-  Turborepo: SiTurborepo,
-  Docker: SiDocker,
-  "GitHub Actions": SiGithubactions,
+const CATEGORY_ICON: Record<TechCategory, LucideIcon> = {
+  language: Code2,
+  framework: Layers3,
+  styling: Paintbrush,
+  state: Braces,
+  data: Database,
+  library: Blocks,
+  tooling: Wrench,
 }
 
 export default function TechNode({ data, selected }: NodeProps<TechNodeType>) {
   const category = data.techCategory ?? "library"
   const color = CATEGORY_COLOR[category]
-  const Icon = TECH_ICON[data.label]
+  const Icon = CATEGORY_ICON[category]
 
   return (
     <div
@@ -107,14 +52,7 @@ export default function TechNode({ data, selected }: NodeProps<TechNodeType>) {
         boxShadow: `0 0 12px ${color}33`,
       }}
     >
-      {Icon ? (
-        <Icon size={22} color={color} className="pointer-events-none" />
-      ) : (
-        <span
-          className="inline-block h-4 w-4 rounded-full"
-          style={{ background: color }}
-        />
-      )}
+      <Icon size={22} color={color} className="pointer-events-none" />
       <span className="font-mono text-xs text-white pointer-events-none select-none whitespace-nowrap">
         {data.label}
       </span>

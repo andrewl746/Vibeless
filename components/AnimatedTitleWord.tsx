@@ -52,7 +52,7 @@ export default function AnimatedTitleWord() {
       <span>{currentWord.slice(0, visibleLength)}</span>
       <span
         aria-hidden="true"
-        className="typing-cursor ml-1 inline-block h-[0.92em] w-[0.08em] translate-y-[0.1em] bg-[#DCDCAA] shadow-[0_0_16px_rgba(220,220,170,0.52)]"
+        className="typing-cursor ml-1 inline-block h-[0.92em] w-[0.08em] translate-y-[0.1em] bg-[#9CDCFE] shadow-[0_0_16px_rgba(156,220,254,0.52)]"
       />
     </span>
   );

@@ -6,7 +6,7 @@ type NodePoint = {
   anchorX: number;
   anchorY: number;
   radius: number;
-  hue: number;
+  colorIndex: number;
   phase: number;
   rangeX: number;
   rangeY: number;
@@ -14,6 +14,11 @@ type NodePoint = {
 };
 
 const wrap = (value: number, size: number) => ((value % size) + size) % size;
+const palette = [
+  { core: "rgba(78, 201, 176,", glow: "rgba(78, 201, 176, 0.48)" },
+  { core: "rgba(197, 134, 192,", glow: "rgba(197, 134, 192, 0.42)" },
+  { core: "rgba(156, 220, 254,", glow: "rgba(156, 220, 254, 0.48)" },
+];
 
 export default function LandingNetworkBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -55,7 +60,7 @@ export default function LandingNetworkBackground() {
           anchorX: column * spacing - spacing / 2 + jitterX,
           anchorY: row * spacing - spacing / 2 + jitterY,
           radius: 2.2 + (index % 5) * 0.42,
-          hue: 194 + (index % 9) * 3.8,
+          colorIndex: index % palette.length,
           phase: index * 0.73,
           rangeX: spacing * (0.22 + (index % 4) * 0.035),
           rangeY: spacing * (0.18 + (index % 3) * 0.04),
@@ -102,9 +107,9 @@ export default function LandingNetworkBackground() {
 
           if (distance < maxDistance) {
             const strength = 1 - distance / maxDistance;
-            const hue = (nodes[i].hue + nodes[j].hue) / 2;
+            const color = palette[nodes[i].colorIndex];
 
-            context.strokeStyle = `hsla(${hue}, 96%, 60%, ${strength * 0.36})`;
+            context.strokeStyle = `${color.core} ${strength * 0.34})`;
             context.lineWidth = 0.55 + strength * 0.65;
             context.beginPath();
             context.moveTo(first.x, first.y);
@@ -118,18 +123,17 @@ export default function LandingNetworkBackground() {
         const node = nodes[index];
         const position = positions[index];
         const pulse = 0.8 + Math.sin(time * 1.8 + node.phase) * 0.2;
+        const color = palette[node.colorIndex];
 
         context.shadowBlur = 16;
-        context.shadowColor = `hsla(${node.hue}, 100%, 58%, 0.48)`;
-        context.fillStyle = `hsla(${node.hue}, 100%, 58%, ${0.72 * pulse})`;
+        context.shadowColor = color.glow;
+        context.fillStyle = `${color.core} ${0.72 * pulse})`;
         context.beginPath();
         context.arc(position.x, position.y, node.radius, 0, Math.PI * 2);
         context.fill();
 
         context.shadowBlur = 0;
-        context.fillStyle = `hsla(${node.hue + 9}, 100%, 86%, ${
-          0.46 * pulse
-        })`;
+        context.fillStyle = `${color.core} ${0.46 * pulse})`;
         context.beginPath();
         context.arc(position.x, position.y, node.radius * 0.42, 0, Math.PI * 2);
         context.fill();

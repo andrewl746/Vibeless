@@ -28,6 +28,7 @@ import VulnerabilityModal from "./VulnerabilityModal"
 import ViewModeDock from "./ViewModeDock"
 import SearchBar from "./SearchBar"
 import SimulationToolbar from "./SimulationToolbar"
+import RepoAssistant from "./RepoAssistant"
 import AnimatedFlowEdge from "./AnimatedFlowEdge"
 import ProjectNode from "@/components/nodes/ProjectNode"
 import FolderNode from "@/components/nodes/FolderNode"
@@ -196,7 +197,13 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
           },
         }
       }),
-    [nodes, zoomLevel, currentViewMode, riskCounts, simulationNodeStates]
+    [
+      nodes,
+      zoomLevel,
+      currentViewMode,
+      riskCounts,
+      simulationNodeStates,
+    ]
   )
 
   const enrichedEdges = useMemo(
@@ -229,6 +236,7 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
       <SearchBar onFocus={handleFocusNode} />
       {/* Simulation runs on the file graph — irrelevant in the Tech Stack lens */}
       {!isTechMode && <SimulationToolbar />}
+      <RepoAssistant />
 
       <ReactFlow
         nodes={enrichedNodes}
@@ -339,8 +347,12 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
         <MiniMap
           position="top-right"
           style={{
-            background: "#090D14",
-            border: "1px solid #141B24",
+            margin: 12,
+            background: "rgba(9, 13, 20, 0.94)",
+            border: "1px solid #263244",
+            borderRadius: 8,
+            boxShadow: "0 0 24px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.03)",
+            overflow: "hidden",
           }}
           nodeColor={(n) => {
             const kind = (n.data as GraphNodeData).kind
