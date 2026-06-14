@@ -154,42 +154,13 @@ export default async function LandingPage() {
                   product preview
                 </span>
               </div>
-              <div className="grid min-h-[250px] gap-0 md:grid-cols-[240px_1fr]">
-                <aside className="border-b border-white/10 bg-black/20 p-5 md:border-b-0 md:border-r">
-                  <div className="mb-5 h-3 w-28 rounded-full bg-[#9CDCFE]/20" />
-                  <div className="space-y-3">
-                    {["app/", "components/", "lib/", "onboarding.md"].map(
-                      (item, index) => (
-                        <div
-                          key={item}
-                          className={`rounded-md border border-white/8 bg-white/[0.035] px-3 py-2 font-mono text-xs ${
-                            index === 0
-                              ? "text-[#9CDCFE]/80"
-                            : index === 1
-                                ? "text-[#4EC9B0]/75"
-                                : index === 2
-                                  ? "text-[#C586C0]/70"
-                                  : "text-[#9CDCFE]/70"
-                          }`}
-                        >
-                          {item}
-                        </div>
-                      ),
-                    )}
-                  </div>
-                </aside>
-                <div className="relative flex items-center justify-center p-8">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(156,220,254,0.14),transparent_34%)]" />
-                  <div className="relative w-full max-w-xl rounded-lg border border-dashed border-[#9CDCFE]/25 bg-black/25 p-8 text-center">
-                    <p className="font-mono text-xs uppercase tracking-widest text-[#9CDCFE]/70">
-                      reserved for product imagery
-                    </p>
-                    <p className="mt-3 font-sans text-sm leading-6 text-slate-400">
-                      Reserved space for the Flowboard project screenshot,
-                      dashboard capture, or repository map preview.
-                    </p>
-                  </div>
-                </div>
+              <div className="relative min-h-[280px] overflow-hidden bg-[#07131a] sm:min-h-[430px]">
+                <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_50%_20%,rgba(156,220,254,0.12),transparent_32%),linear-gradient(135deg,rgba(78,201,176,0.08),transparent_30%,rgba(197,134,192,0.08)_100%)]" />
+                <img
+                  src="/flowboard-project-screenshot.png"
+                  alt="Flowboard repository flowchart view"
+                  className="absolute inset-0 h-full w-full object-cover object-top opacity-95"
+                />
               </div>
             </div>
           </div>

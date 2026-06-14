@@ -13,9 +13,11 @@ interface AssistantContext {
   viewMode: string
   activeSelection?: string | null
   graphSummary: string
+  fileTree?: string[]
   techStack: string[]
   highImpactFiles: Array<{ path: string; refs: number }>
-  visibleNodes: Array<{ label: string; kind: string; path?: string }>
+  codeReferences?: Array<{ path: string; summary: string; code: string }>
+  visibleNodes: Array<{ label: string; kind: string; path?: string; hasCode?: boolean }>
   visibleEdges: Array<{ source: string; target: string }>
 }
 
@@ -40,12 +42,17 @@ const SYSTEM_PROMPT =
   "missing and suggest the next UI action. Do not pretend to inspect files that " +
   "were not included. Avoid boilerplate like 'Sure'. Format answers for a small " +
   "chat panel: short paragraphs, real markdown bullet lists with blank lines " +
-  "before lists, and no giant single-paragraph markdown dumps."
+  "before lists, and no giant single-paragraph markdown dumps. Use the supplied " +
+  "file tree and code excerpts when answering implementation or architecture " +
+  "questions, and name the relevant paths when useful."
 
 function compactContext(context: AssistantContext) {
   const visibleNodes = context.visibleNodes
     .slice(0, 40)
-    .map((node) => `- ${node.kind}: ${node.label}${node.path ? ` (${node.path})` : ""}`)
+    .map((node) => {
+      const codeHint = node.hasCode ? " [code available]" : ""
+      return `- ${node.kind}: ${node.label}${node.path ? ` (${node.path})` : ""}${codeHint}`
+    })
     .join("\n")
 
   const visibleEdges = context.visibleEdges
@@ -58,11 +65,24 @@ function compactContext(context: AssistantContext) {
     .map((file) => `- ${file.path}: ${file.refs} inbound refs`)
     .join("\n")
 
+  const fileTree = (context.fileTree ?? []).slice(0, 100).join("\n")
+
+  const codeReferences = (context.codeReferences ?? [])
+    .slice(0, 8)
+    .map(
+      (file) =>
+        `### ${file.path}\n${file.summary}\n\`\`\`\n${file.code.slice(0, 2600)}\n\`\`\``
+    )
+    .join("\n\n")
+
   return [
     `View mode: ${context.viewMode}`,
     `Active selection: ${context.activeSelection || "none"}`,
     `Graph summary: ${context.graphSummary}`,
     `Detected tech stack: ${context.techStack.length ? context.techStack.join(", ") : "none"}`,
+    "",
+    "Repository file hierarchy:",
+    fileTree || "- none available",
     "",
     "High-impact files:",
     highImpact || "- none available",
@@ -72,6 +92,9 @@ function compactContext(context: AssistantContext) {
     "",
     "Visible edges:",
     visibleEdges || "- none loaded",
+    "",
+    "Code excerpts available for this question:",
+    codeReferences || "- none included",
   ].join("\n")
 }
 

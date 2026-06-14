@@ -7,6 +7,7 @@ import { Bot, MessageCircle, Send, X } from "lucide-react"
 import { useGraphStore } from "@/store/useGraphStore"
 import { useCanvasStore } from "@/store/useCanvasStore"
 import type { GraphNodeData } from "@/components/nodes/types"
+import type { ScannedEntityMap, ScannedFile } from "@/utils/codeScanner"
 import type { Node } from "@xyflow/react"
 
 type ChatTone = "casual" | "formal" | "concise"
@@ -103,12 +104,72 @@ function summarizeKinds(nodes: Node<GraphNodeData>[]) {
   }, {})
 }
 
+function truncateCode(source: string, maxChars = 2200) {
+  const clean = source.trim()
+  if (clean.length <= maxChars) return clean
+  return `${clean.slice(0, maxChars).trimEnd()}\n// ...truncated for chat context`
+}
+
+function buildFileTree(paths: string[], maxLines = 90) {
+  const sortedPaths = [...new Set(paths)].sort((a, b) => a.localeCompare(b))
+  const lines = sortedPaths.map((path) => {
+    const depth = Math.max(0, path.split("/").length - 1)
+    const name = path.split("/").pop() ?? path
+    return `${"  ".repeat(Math.min(depth, 6))}- ${name} (${path})`
+  })
+  const shown = lines.slice(0, maxLines)
+  if (lines.length > shown.length) {
+    shown.push(`- ...${lines.length - shown.length} more files`)
+  }
+  return shown
+}
+
+function fileSummary(file: ScannedFile) {
+  const functions = file.functions.map((fn) => fn.name).slice(0, 16)
+  const variables = file.variables.map((variable) => variable.name).slice(0, 12)
+  return [
+    functions.length ? `functions: ${functions.join(", ")}` : "functions: none detected",
+    variables.length ? `variables: ${variables.join(", ")}` : "variables: none detected",
+  ].join("; ")
+}
+
+function buildCodeReferences(
+  entityMap: ScannedEntityMap,
+  nodes: Node<GraphNodeData>[],
+  highImpactFiles: Array<{ path: string; refs: number }>,
+  activePath?: string | null
+) {
+  const selectedPaths = new Set<string>()
+
+  if (activePath && entityMap[activePath]) selectedPaths.add(activePath)
+
+  for (const { path } of highImpactFiles.slice(0, 4)) {
+    if (entityMap[path]) selectedPaths.add(path)
+  }
+
+  for (const node of nodes) {
+    const path = node.data.path
+    if (typeof path === "string" && entityMap[path]) selectedPaths.add(path)
+    if (selectedPaths.size >= 8) break
+  }
+
+  return [...selectedPaths].slice(0, 8).map((path) => {
+    const file = entityMap[path]
+    return {
+      path,
+      summary: fileSummary(file),
+      code: truncateCode(file.source),
+    }
+  })
+}
+
 export default function RepoAssistant() {
   const nodes = useGraphStore((s) => s.nodes) as Node<GraphNodeData>[]
   const edges = useGraphStore((s) => s.edges)
   const currentViewMode = useGraphStore((s) => s.currentViewMode)
   const techStack = useGraphStore((s) => s.techStack)
   const riskCounts = useGraphStore((s) => s.riskCounts)
+  const allScannedEntities = useGraphStore((s) => s.allScannedEntities)
   const activeNode = useCanvasStore((s) => s.activeNode)
   const [open, setOpen] = useState(false)
   const [tone, setTone] = useState<ChatTone>("casual")
@@ -126,11 +187,20 @@ export default function RepoAssistant() {
   function buildAssistantContext() {
     const counts = summarizeKinds(nodes)
     const nodeLabelById = new Map(nodes.map((node) => [node.id, node.data.label]))
+    const highImpactFiles = Object.entries(riskCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([path, refs]) => ({ path, refs }))
+    const filePaths = Object.keys(allScannedEntities)
+    const activePath =
+      activeNode?.path && allScannedEntities[activeNode.path] ? activeNode.path : null
+
     return {
       viewMode: currentViewMode,
       activeSelection: activeNode
         ? `${activeNode.name} (${activeNode.type}, ${activeNode.path})`
         : null,
+      fileTree: buildFileTree(filePaths),
       graphSummary: `${nodes.length} nodes, ${edges.length} edges. Breakdown: ${
         Object.entries(counts)
           .map(([kind, count]) => `${count} ${kind}`)
@@ -139,14 +209,13 @@ export default function RepoAssistant() {
       techStack: techStack.map((item) =>
         item.version ? `${item.name}@${item.version}` : item.name
       ),
-      highImpactFiles: Object.entries(riskCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .map(([path, refs]) => ({ path, refs })),
+      highImpactFiles,
+      codeReferences: buildCodeReferences(allScannedEntities, nodes, highImpactFiles, activePath),
       visibleNodes: nodes.slice(0, 80).map((node) => ({
         label: node.data.label,
         kind: node.data.kind,
         path: node.data.path,
+        hasCode: Boolean(node.data.code),
       })),
       visibleEdges: edges.slice(0, 80).map((edge) => ({
         source: nodeLabelById.get(edge.source) ?? edge.source,
