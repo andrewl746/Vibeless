@@ -62,6 +62,74 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Description modal entrance */
+@keyframes descIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Code preview pane: Prism syntax theme (clinical palette) ───────────── */
+.code-pane pre[class*="language-"],
+.code-pane code[class*="language-"] {
+  color: #ffffff;
+  background: none;
+  text-shadow: none;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  tab-size: 2;
+}
+.code-pane .token.comment,
+.code-pane .token.prolog,
+.code-pane .token.doctype,
+.code-pane .token.cdata {
+  color: #00A3FF; /* electric cyan comments */
+  font-style: italic;
+}
+.code-pane .token.string,
+.code-pane .token.char,
+.code-pane .token.attr-value,
+.code-pane .token.regex {
+  color: #00E676; /* neon green strings */
+}
+.code-pane .token.keyword,
+.code-pane .token.boolean,
+.code-pane .token.atrule,
+.code-pane .token.tag {
+  color: #5CC8FF;
+}
+.code-pane .token.function,
+.code-pane .token.function-variable {
+  color: #00E676;
+}
+.code-pane .token.number,
+.code-pane .token.class-name,
+.code-pane .token.constant {
+  color: #FFB300;
+}
+.code-pane .token.attr-name,
+.code-pane .token.property {
+  color: #00A3FF;
+}
+.code-pane .token.punctuation {
+  color: #4B5E74;
+}
+.code-pane .token.operator {
+  color: #8AA0B5;
+  background: none;
+}
+/* Line-numbers plugin gutter */
+.code-pane .line-numbers .line-numbers-rows {
+  border-right: 1px solid #141B24;
+}
+.code-pane .line-numbers-rows > span::before {
+  color: #2E3C4D;
+}
+
 /* Themed scrollbar — global */
 ::-webkit-scrollbar {
   width: 6px;
