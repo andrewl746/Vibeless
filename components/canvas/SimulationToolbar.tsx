@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useGraphStore } from "@/store/useGraphStore"
 import type { GraphNodeData } from "@/components/nodes/types"
 import type { Node } from "@xyflow/react"
@@ -50,15 +50,9 @@ export default function SimulationToolbar() {
     })
   }, [nodes])
 
-  const defaultEntry = entryOptions[0]?.id ?? ""
-  const [entryNodeId, setEntryNodeId] = useState(defaultEntry)
+  // The user's explicit pick (may go stale as the graph / filter changes).
+  const [picked, setPicked] = useState("")
   const [entryQuery, setEntryQuery] = useState("")
-
-  useEffect(() => {
-    if (!entryNodeId || !entryOptions.some((node) => node.id === entryNodeId)) {
-      setEntryNodeId(defaultEntry)
-    }
-  }, [defaultEntry, entryNodeId, entryOptions])
 
   const normalizedQuery = entryQuery.trim().toLowerCase()
   const filteredEntryOptions = useMemo(
@@ -71,23 +65,18 @@ export default function SimulationToolbar() {
     [entryOptions, normalizedQuery]
   )
 
-  useEffect(() => {
-    if (
-      normalizedQuery.length > 0 &&
-      filteredEntryOptions.length > 0 &&
-      !filteredEntryOptions.some((node) => node.id === entryNodeId)
-    ) {
-      setEntryNodeId(filteredEntryOptions[0].id)
-    }
-  }, [entryNodeId, filteredEntryOptions, normalizedQuery])
+  // Effective selection, derived during render: the pick when it's still a valid
+  // option, otherwise the first available. No effect / setState sync needed.
+  const effectiveEntryId =
+    picked && filteredEntryOptions.some((node) => node.id === picked)
+      ? picked
+      : filteredEntryOptions[0]?.id ?? ""
 
-  const selectedEntryVisible = filteredEntryOptions.some((node) => node.id === entryNodeId)
-  const selectedEntryValue = selectedEntryVisible ? entryNodeId : ""
-  const canRun = Boolean(entryNodeId) && selectedEntryVisible && entryOptions.length > 0
+  const canRun = Boolean(effectiveEntryId) && entryOptions.length > 0
 
   return (
     <div className="absolute bottom-4 left-1/2 z-40 w-[min(900px,calc(100%-2rem))] -translate-x-1/2 rounded-lg border border-border-muted bg-bg-panel/95 p-3 shadow-[0_0_30px_rgba(0,0,0,0.55)] backdrop-blur pointer-events-auto">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end">
         <div className="grid min-w-0 flex-1 gap-2 md:grid-cols-[0.8fr_1.2fr]">
           <div>
             <div className="mb-1 flex items-center justify-between gap-2">
@@ -123,10 +112,10 @@ export default function SimulationToolbar() {
               Simulation Entry
             </label>
           <select
-            value={selectedEntryValue}
-            onChange={(event) => setEntryNodeId(event.target.value)}
+            value={effectiveEntryId}
+            onChange={(event) => setPicked(event.target.value)}
             disabled={filteredEntryOptions.length === 0 || isSimulationActive}
-            className="h-9 w-full rounded border border-border-muted bg-bg-deep px-2 font-mono text-xs text-white outline-none transition-colors focus:border-accent-blue disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-9 w-full truncate rounded border border-border-muted bg-bg-deep pl-2 pr-8 font-mono text-xs text-white outline-none transition-colors focus:border-accent-blue disabled:cursor-not-allowed disabled:opacity-50"
           >
             {entryOptions.length === 0 ? (
               <option value="">Select a file or folder to build the graph</option>
@@ -145,7 +134,7 @@ export default function SimulationToolbar() {
 
         <div className="flex items-end gap-2">
           <button
-            onClick={() => startSimulation(entryNodeId)}
+            onClick={() => startSimulation(effectiveEntryId)}
             disabled={!canRun || isSimulationActive}
             className="h-9 rounded border border-emerald-500/50 bg-emerald-950/50 px-3 font-mono text-[10px] uppercase tracking-widest text-emerald-200 transition-colors hover:border-emerald-400 hover:bg-emerald-900/60 disabled:cursor-not-allowed disabled:opacity-40"
           >

@@ -14,6 +14,11 @@ const MODES: { mode: ViewMode; label: string; activeClass: string }[] = [
     label: "[ 2. BLAST RADIUS SIMULATOR ]",
     activeClass: "text-red-300 bg-[#1F0A0E] border-[#EF4444]",
   },
+  {
+    mode: "TECH_STACK",
+    label: "[ 3. TECH STACK FLOW ]",
+    activeClass: "text-emerald-300 bg-[#06201A] border-[#00E676]",
+  },
 ]
 
 export default function ViewModeDock() {

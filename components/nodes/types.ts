@@ -1,6 +1,8 @@
-export type NodeKind = "project" | "folder" | "file" | "function" | "variable"
+import type { TechCategory } from "@/utils/techStack"
 
-export type ViewMode = "TREE" | "BLAST_RADIUS"
+export type NodeKind = "project" | "folder" | "file" | "function" | "variable" | "tech"
+
+export type ViewMode = "TREE" | "BLAST_RADIUS" | "TECH_STACK"
 
 export type RiskLevel = "critical" | "moderate" | "low"
 
@@ -16,4 +18,7 @@ export interface GraphNodeData extends Record<string, unknown> {
   riskLevel?: RiskLevel
   inwardCount?: number
   simulationStatus?: "idle" | "running" | "success" | "error"
+  // Tech Stack flow nodes
+  techCategory?: TechCategory
+  techVersion?: string
 }

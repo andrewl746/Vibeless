@@ -4,6 +4,7 @@ import { create } from "zustand"
 import type { Node, Edge } from "@xyflow/react"
 import type { ScannedEntityMap } from "@/utils/codeScanner"
 import type { NodeKind, ViewMode, RiskLevel } from "@/components/nodes/types"
+import type { TechItem } from "@/utils/techStack"
 import { generateMockSimulationRoute } from "@/utils/simulation"
 
 export type SimulationStatus = "idle" | "running" | "success" | "error"
@@ -69,6 +70,8 @@ interface GraphStore {
   // Repo-wide inward import counts + importer lists, keyed by file path.
   riskCounts: Record<string, number>
   riskImporters: Record<string, string[]>
+  // Detected tech stack (for the Tech Stack flow lens).
+  techStack: TechItem[]
 
   // AI vulnerability / blast-impact popup
   isVulnLoading: boolean
@@ -94,6 +97,7 @@ interface GraphStore {
   openCodePane: (code: string, lang: string, filename?: string) => void
   closeCodePane: () => void
   setViewMode: (mode: ViewMode) => void
+  setTechStack: (stack: TechItem[]) => void
   setRepoCacheToken: (token: string) => void
   setRiskData: (
     counts: Record<string, number>,
@@ -158,6 +162,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   currentViewMode: "TREE",
   riskCounts: {},
   riskImporters: {},
+  techStack: [],
 
   isVulnLoading: false,
   isVulnStreaming: false,
@@ -205,6 +210,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   closeCodePane: () => set({ isCodePaneOpen: false }),
 
   setViewMode: (mode) => set({ currentViewMode: mode }),
+
+  setTechStack: (stack) => set({ techStack: stack }),
 
   setRepoCacheToken: (token) => set({ repoCacheToken: token }),
 
