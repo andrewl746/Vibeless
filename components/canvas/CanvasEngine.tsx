@@ -23,13 +23,15 @@ import { useCanvasStore } from "@/store/useCanvasStore"
 import { layoutGraph } from "@/utils/layout"
 import IsolationOverlay from "./IsolationOverlay"
 import DescriptionModal from "./DescriptionModal"
+import VulnerabilityModal from "./VulnerabilityModal"
+import ViewModeDock from "./ViewModeDock"
 import SearchBar from "./SearchBar"
 import ProjectNode from "@/components/nodes/ProjectNode"
 import FolderNode from "@/components/nodes/FolderNode"
 import FileNode from "@/components/nodes/FileNode"
 import FunctionNode from "@/components/nodes/FunctionNode"
 import VariableNode from "@/components/nodes/VariableNode"
-import type { GraphNodeData } from "@/components/nodes/types"
+import type { GraphNodeData, RiskLevel } from "@/components/nodes/types"
 
 export interface CanvasEngineHandle {
   focusNode: (nodeId: string) => void
@@ -51,6 +53,8 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   const layoutLocked = useGraphStore((s) => s.layoutLocked)
   const toggleLayoutLocked = useGraphStore((s) => s.toggleLayoutLocked)
   const isCodePaneOpen = useGraphStore((s) => s.isCodePaneOpen)
+  const currentViewMode = useGraphStore((s) => s.currentViewMode)
+  const riskCounts = useGraphStore((s) => s.riskCounts)
   // The applied semantic-zoom tier (frozen by the store while layout is locked).
   const effectiveTier = useGraphStore((s) => s.appliedZoomTier)
   const setStoreNodes = useGraphStore((s) => s.setNodes)
@@ -141,10 +145,29 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
     [storeNodes, setStoreNodes]
   )
 
-  // Inject the raw zoom so nodes can show/hide their detail text
+  // Inject the raw zoom (detail text), the active view mode, and the repo-wide
+  // risk level (keyed by file path) so nodes can switch into the heatmap lens
+  // without re-layout. Counts come from the repo-wide scan, not the displayed
+  // subtree, so hub files read as critical from any folder.
   const enrichedNodes = useMemo(
-    () => nodes.map((n) => ({ ...n, data: { ...n.data, zoomLevel } })),
-    [nodes, zoomLevel]
+    () =>
+      nodes.map((n) => {
+        const path = (n.data as GraphNodeData).path
+        const inward = path ? riskCounts[path] ?? 0 : 0
+        const riskLevel: RiskLevel =
+          inward >= 4 ? "critical" : inward >= 1 ? "moderate" : "low"
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            zoomLevel,
+            viewMode: currentViewMode,
+            riskLevel,
+            inwardCount: inward,
+          },
+        }
+      }),
+    [nodes, zoomLevel, currentViewMode, riskCounts]
   )
 
   function handleFocusNode(id: string) {
@@ -156,6 +179,8 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
     <div className="relative w-full h-full">
       <IsolationOverlay />
       <DescriptionModal />
+      <VulnerabilityModal />
+      <ViewModeDock />
       <SearchBar onFocus={handleFocusNode} />
 
       <ReactFlow

@@ -1,42 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import ReactMarkdown, { type Components } from "react-markdown"
+import ReactMarkdown from "react-markdown"
 import { useGraphStore } from "@/store/useGraphStore"
+import { createMarkdownComponents, DESCRIPTION_THEME } from "./markdownTheme"
+import { useTypewriter } from "./useTypewriter"
 
-// Custom renderers that inherit the tactical / clinical aesthetic.
-const markdownComponents: Components = {
-  p: ({ children }) => (
-    <p className="text-xs text-gray-300 font-mono tracking-wide leading-relaxed mb-4 last:mb-0">
-      {children}
-    </p>
-  ),
-  strong: ({ children }) => (
-    <strong className="text-white font-semibold shadow-[0_0_8px_rgba(0,163,255,0.2)]">
-      {children}
-    </strong>
-  ),
-  em: ({ children }) => <em className="text-accent-blue/90 not-italic">{children}</em>,
-  code: ({ children }) => (
-    <code className="bg-bg-deep border border-border-muted font-mono text-xs text-accent-blue px-1.5 py-0.5 rounded">
-      {children}
-    </code>
-  ),
-  ul: ({ children }) => (
-    <ul className="list-disc list-outside pl-5 mb-4 flex flex-col gap-1.5">{children}</ul>
-  ),
-  ol: ({ children }) => (
-    <ol className="list-decimal list-outside pl-5 mb-4 flex flex-col gap-1.5">{children}</ol>
-  ),
-  li: ({ children }) => (
-    <li className="text-xs text-gray-300 font-mono tracking-wide leading-relaxed">{children}</li>
-  ),
-  a: ({ children, href }) => (
-    <a href={href} className="text-accent-blue underline underline-offset-2 hover:text-white transition-colors">
-      {children}
-    </a>
-  ),
-}
+// Every markdown element inherits the tactical mono theme (no default fonts).
+const markdownComponents = createMarkdownComponents(DESCRIPTION_THEME)
 
 // Reveals the buffered text one slice per animation frame so it always *types*
 // smoothly, decoupled from the choppy network bursts the store receives. A fresh
@@ -49,48 +19,7 @@ function DescriptionBody() {
   const descError = useGraphStore((s) => s.descError)
 
   const target = activeDescriptionText ?? ""
-  const [displayed, setDisplayed] = useState("")
-  const displayedRef = useRef("")
-  const targetRef = useRef(target)
-  const rafRef = useRef<number | null>(null)
-
-  // Keep the loop's view of the target current without touching refs in render.
-  useEffect(() => {
-    targetRef.current = target
-  }, [target])
-
-  // Drive the reveal. The loop self-schedules until it has caught up to the
-  // buffered target, then parks itself; new text re-kicks it.
-  useEffect(() => {
-    if (rafRef.current !== null) return
-    if (displayedRef.current.length >= target.length) return
-
-    const tick = () => {
-      const t = targetRef.current
-      const cur = displayedRef.current
-      if (cur.length >= t.length) {
-        rafRef.current = null
-        return
-      }
-      // Reveal proportionally to backlog so it keeps pace on big bursts but
-      // settles to ~1 char/frame near the end for a smooth finish.
-      const backlog = t.length - cur.length
-      const step = Math.max(1, Math.ceil(backlog / 4))
-      const next = t.slice(0, cur.length + step)
-      displayedRef.current = next
-      setDisplayed(next)
-      rafRef.current = requestAnimationFrame(tick)
-    }
-    rafRef.current = requestAnimationFrame(tick)
-  }, [target])
-
-  // Cancel any in-flight frame on unmount.
-  useEffect(() => {
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-      rafRef.current = null
-    }
-  }, [])
+  const displayed = useTypewriter(target)
 
   if (isDescLoading) {
     return (

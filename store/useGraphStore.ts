@@ -3,7 +3,7 @@
 import { create } from "zustand"
 import type { Node, Edge } from "@xyflow/react"
 import type { ScannedEntityMap } from "@/utils/codeScanner"
-import type { NodeKind } from "@/components/nodes/types"
+import type { NodeKind, ViewMode, RiskLevel } from "@/components/nodes/types"
 
 interface GraphSnapshot {
   nodes: Node[]
@@ -45,12 +45,45 @@ interface GraphStore {
   activeCodeLanguage: string
   activeCodeFilename: string | null
 
+  // Cache token for AI output: `owner/repo@treeSha`. Invalidates on repo change.
+  repoCacheToken: string
+
+  // Global visual lens
+  currentViewMode: ViewMode
+  // Repo-wide inward import counts + importer lists, keyed by file path.
+  riskCounts: Record<string, number>
+  riskImporters: Record<string, string[]>
+
+  // AI vulnerability / blast-impact popup
+  isVulnLoading: boolean
+  isVulnStreaming: boolean
+  activeVulnText: string | null
+  vulnTargetName: string | null
+  vulnError: string | null
+  vulnFetchId: number
+  vulnRiskLevel: RiskLevel
+  vulnUsages: string[]
+
   setNodes: (nodes: Node[]) => void
   setEdges: (edges: Edge[]) => void
   setZoomLevel: (zoom: number) => void
   toggleLayoutLocked: () => void
   openCodePane: (code: string, lang: string, filename?: string) => void
   closeCodePane: () => void
+  setViewMode: (mode: ViewMode) => void
+  setRepoCacheToken: (token: string) => void
+  setRiskData: (
+    counts: Record<string, number>,
+    importers: Record<string, string[]>
+  ) => void
+  fetchNodeVulnerability: (
+    name: string,
+    path: string,
+    code: string,
+    riskLevel: RiskLevel,
+    usages: string[]
+  ) => Promise<void>
+  clearVulnerability: () => void
   fetchNodeDescription: (
     name: string,
     type: string,
@@ -94,6 +127,20 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   activeCodeLanguage: "typescript",
   activeCodeFilename: null,
 
+  repoCacheToken: "",
+  currentViewMode: "TREE",
+  riskCounts: {},
+  riskImporters: {},
+
+  isVulnLoading: false,
+  isVulnStreaming: false,
+  activeVulnText: null,
+  vulnTargetName: null,
+  vulnError: null,
+  vulnFetchId: 0,
+  vulnRiskLevel: "low",
+  vulnUsages: [],
+
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
   setZoomLevel: (zoom) =>
@@ -124,7 +171,79 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   // watches isCodePaneOpen, once the slide animation settles.
   closeCodePane: () => set({ isCodePaneOpen: false }),
 
+  setViewMode: (mode) => set({ currentViewMode: mode }),
+
+  setRepoCacheToken: (token) => set({ repoCacheToken: token }),
+
+  setRiskData: (counts, importers) => set({ riskCounts: counts, riskImporters: importers }),
+
+  fetchNodeVulnerability: async (name, path, code, riskLevel, usages) => {
+    const cacheToken = get().repoCacheToken
+
+    set((s) => ({
+      isVulnLoading: true,
+      isVulnStreaming: false,
+      activeVulnText: "",
+      vulnError: null,
+      vulnTargetName: name,
+      vulnRiskLevel: riskLevel,
+      vulnUsages: usages,
+      vulnFetchId: s.vulnFetchId + 1,
+    }))
+
+    try {
+      const res = await fetch("/api/vulnerability", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, path, code, riskLevel, usages, cacheToken }),
+      })
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string }
+        set({ vulnError: data.error ?? "Failed to generate impact report.", isVulnLoading: false })
+        return
+      }
+      if (!res.body) {
+        set({ vulnError: "No response body from the impact service.", isVulnLoading: false })
+        return
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let first = true
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const tokenText = decoder.decode(value, { stream: true })
+        if (first) {
+          set({ isVulnLoading: false, isVulnStreaming: true })
+          first = false
+        }
+        set((s) => ({ activeVulnText: (s.activeVulnText ?? "") + tokenText }))
+      }
+      set({ isVulnLoading: false, isVulnStreaming: false })
+    } catch {
+      set({
+        vulnError: "Network error — could not reach the impact service.",
+        isVulnLoading: false,
+        isVulnStreaming: false,
+      })
+    }
+  },
+
+  clearVulnerability: () =>
+    set({
+      isVulnLoading: false,
+      isVulnStreaming: false,
+      activeVulnText: null,
+      vulnTargetName: null,
+      vulnError: null,
+      vulnUsages: [],
+    }),
+
   fetchNodeDescription: async (name, type, path, code) => {
+    const cacheToken = get().repoCacheToken
+
     set((s) => ({
       isDescLoading: true,
       isDescStreaming: false,
@@ -133,11 +252,14 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       descTargetName: name,
       descFetchId: s.descFetchId + 1,
     }))
+
     try {
+      // Caching is handled server-side (shared Firestore): the route serves a
+      // cache hit as a one-shot stream, or streams Claude + persists on finish.
       const res = await fetch("/api/describe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, type, path, codeContext: code }),
+        body: JSON.stringify({ name, type, path, codeContext: code, cacheToken }),
       })
 
       // Errors are returned as JSON before the stream begins.
@@ -159,13 +281,13 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        const token = decoder.decode(value, { stream: true })
+        const tokenText = decoder.decode(value, { stream: true })
         if (first) {
           // First byte in — drop the loading state so text renders live.
           set({ isDescLoading: false, isDescStreaming: true })
           first = false
         }
-        set((s) => ({ activeDescriptionText: (s.activeDescriptionText ?? "") + token }))
+        set((s) => ({ activeDescriptionText: (s.activeDescriptionText ?? "") + tokenText }))
       }
       set({ isDescLoading: false, isDescStreaming: false })
     } catch {

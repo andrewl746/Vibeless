@@ -14,11 +14,17 @@ export interface GitHubTree {
   truncated: boolean
 }
 
+export interface RepoTreeResult {
+  tree: GitHubTreeItem[]
+  /** Tree SHA — a content fingerprint that changes when any file changes. */
+  sha: string
+}
+
 export async function fetchRepoTree(
   accessToken: string,
   owner: string,
   repo: string,
-): Promise<GitHubTreeItem[]> {
+): Promise<RepoTreeResult> {
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`,
     {
@@ -31,10 +37,10 @@ export async function fetchRepoTree(
   )
 
   // 404 = repo not found, 409 = repo exists but has no commits yet (empty)
-  if (res.status === 404 || res.status === 409) return []
+  if (res.status === 404 || res.status === 409) return { tree: [], sha: "" }
   if (!res.ok) throw new Error(`GitHub tree API error: ${res.status}`)
   const data = (await res.json()) as GitHubTree
-  return data.tree
+  return { tree: data.tree, sha: data.sha }
 }
 
 export interface GitHubRepo {

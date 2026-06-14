@@ -2,12 +2,19 @@
 
 import { useGraphStore } from "@/store/useGraphStore"
 import { findUsages } from "@/utils/codeScanner"
-import type { GraphNodeData, NodeKind } from "./types"
+import type { GraphNodeData, NodeKind, RiskLevel } from "./types"
 import type { Node, Edge } from "@xyflow/react"
 
 interface NodeOverlayProps {
   id: string
   data: GraphNodeData
+}
+
+// Stand-out styling for the IMPACT button, tinted by computed risk.
+const IMPACT_STYLE: Record<RiskLevel, { bg: string; border: string; text: string; glow: string }> = {
+  critical: { bg: "#1F0A0E", border: "#EF4444", text: "#FCA5A5", glow: "0 0 12px rgba(239,68,68,0.45)" },
+  moderate: { bg: "#241804", border: "#F59E0B", text: "#FCD34D", glow: "0 0 12px rgba(245,158,11,0.35)" },
+  low: { bg: "#0E141B", border: "#33465A", text: "#8FB3CC", glow: "none" },
 }
 
 // Map a file extension to a Prism language id.
@@ -37,10 +44,20 @@ function langFromPath(path?: string): string {
 export default function NodeOverlay({ id, data }: NodeOverlayProps) {
   const enterIsolationMode = useGraphStore((s) => s.enterIsolationMode)
   const fetchNodeDescription = useGraphStore((s) => s.fetchNodeDescription)
+  const fetchNodeVulnerability = useGraphStore((s) => s.fetchNodeVulnerability)
   const openCodePane = useGraphStore((s) => s.openCodePane)
+  const riskCounts = useGraphStore((s) => s.riskCounts)
+  const riskImporters = useGraphStore((s) => s.riskImporters)
   const allNodes = useGraphStore((s) => s.nodes)
   const allEdges = useGraphStore((s) => s.edges)
   const allScannedEntities = useGraphStore((s) => s.allScannedEntities)
+
+  // Blast-impact data for this file node (computed repo-wide).
+  const filePath = data.path ?? ""
+  const inward = riskCounts[filePath] ?? 0
+  const riskLevel: RiskLevel = inward >= 4 ? "critical" : inward >= 1 ? "moderate" : "low"
+  const usages = riskImporters[filePath] ?? []
+  const impact = IMPACT_STYLE[riskLevel]
 
   function handleTrace() {
     // Start with direct graph edges
@@ -77,6 +94,29 @@ export default function NodeOverlay({ id, data }: NodeOverlayProps) {
     <>
       {/* Inline floating action menu */}
       <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 flex flex-col gap-1 pointer-events-auto">
+        {data.kind === "file" && data.viewMode === "BLAST_RADIUS" && (
+          <button
+            onClick={() =>
+              fetchNodeVulnerability(
+                data.label,
+                filePath,
+                data.code ?? "",
+                riskLevel,
+                usages
+              )
+            }
+            title="Where is this used? AI blast-radius report"
+            className="font-mono text-[10px] font-bold px-3 py-1.5 rounded border whitespace-nowrap transition-transform hover:scale-[1.03]"
+            style={{
+              background: impact.bg,
+              borderColor: impact.border,
+              color: impact.text,
+              boxShadow: impact.glow,
+            }}
+          >
+            ⚠ [ IMPACT · {usages.length} ]
+          </button>
+        )}
         <button
           onClick={() =>
             fetchNodeDescription(data.label, data.kind, data.path ?? "", data.code ?? "")

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { useGraphStore } from "@/store/useGraphStore"
 import type { GraphNodeData, NodeKind } from "@/components/nodes/types"
 import type { Node } from "@xyflow/react"
@@ -27,7 +27,7 @@ interface SearchBarProps {
 
 export default function SearchBar({ onFocus }: SearchBarProps) {
   const [query, setQuery] = useState("")
-  const [open, setOpen] = useState(false)
+  const [focused, setFocused] = useState(false)
   const nodes = useGraphStore((s) => s.nodes) as Node<GraphNodeData>[]
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -39,32 +39,31 @@ export default function SearchBar({ onFocus }: SearchBarProps) {
         )
         .slice(0, 10)
 
-  useEffect(() => {
-    setOpen(results.length > 0)
-  }, [results.length])
+  // Derived: show the dropdown when focused and there are matches.
+  const open = focused && results.length > 0
 
   function handleSelect(nodeId: string) {
     onFocus(nodeId)
     setQuery("")
-    setOpen(false)
+    setFocused(false)
     inputRef.current?.blur()
   }
 
   return (
-    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 w-72 pointer-events-auto">
+    <div className="absolute top-3 left-3 z-40 w-72 pointer-events-auto">
       <div className="relative">
         <input
           ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => { if (results.length > 0) setOpen(true) }}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 150)}
           placeholder="Search nodes…"
           className="w-full bg-bg-deep border border-border-muted rounded px-3 py-1.5 font-mono text-xs text-white placeholder-text-muted outline-none focus:border-accent-blue transition-colors"
         />
         {query && (
           <button
-            onClick={() => { setQuery(""); setOpen(false) }}
+            onClick={() => setQuery("")}
             className="absolute right-2 top-1/2 -translate-y-1/2 font-mono text-xs text-text-muted hover:text-white"
           >
             ×

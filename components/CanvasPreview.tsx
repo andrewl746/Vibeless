@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react"
 import { useCanvasStore } from "@/store/useCanvasStore"
 import { useGraphStore } from "@/store/useGraphStore"
-import { buildGraphFromTree } from "@/utils/codeParser"
+import { buildGraphFromTree, computeImportGraph } from "@/utils/codeParser"
 import type { ScannedEntityMap } from "@/utils/codeScanner"
 import type { FileTreeNode } from "@/utils/parseTree"
 import CanvasEngine from "./canvas/CanvasEngine"
@@ -11,6 +11,7 @@ import CanvasEngine from "./canvas/CanvasEngine"
 interface CanvasPreviewProps {
   owner: string
   repo: string
+  sha: string
 }
 
 function collectFilePaths(nodes: FileTreeNode[]): string[] {
@@ -25,14 +26,11 @@ function collectFilePaths(nodes: FileTreeNode[]): string[] {
   return paths
 }
 
-export default function CanvasPreview({ owner, repo }: CanvasPreviewProps) {
+export default function CanvasPreview({ owner, repo, sha }: CanvasPreviewProps) {
+  // Only state values that should *trigger* effects are subscribed; the store
+  // actions are read via getState() inside effects so the dependency arrays stay
+  // small and constant (a changing deps-array size breaks Fast Refresh / React).
   const activeNode = useCanvasStore((s) => s.activeNode)
-  const setActiveNode = useCanvasStore((s) => s.setActiveNode)
-  const setNodes = useGraphStore((s) => s.setNodes)
-  const setEdges = useGraphStore((s) => s.setEdges)
-  const setScannedEntities = useGraphStore((s) => s.setScannedEntities)
-  const exitIsolationMode = useGraphStore((s) => s.exitIsolationMode)
-  const closeCodePane = useGraphStore((s) => s.closeCodePane)
   const isIsolationMode = useGraphStore((s) => s.isIsolationMode)
   const scanCache = useRef<Record<string, ScannedEntityMap>>({})
 
@@ -42,19 +40,58 @@ export default function CanvasPreview({ owner, repo }: CanvasPreviewProps) {
 
   // On repo change, clear the selection + graph carried over from the old repo.
   useEffect(() => {
-    setActiveNode(null)
-    setNodes([])
-    setEdges([])
-    setScannedEntities({})
-    exitIsolationMode()
-    closeCodePane()
+    useCanvasStore.getState().setActiveNode(null)
+    const g = useGraphStore.getState()
+    g.setNodes([])
+    g.setEdges([])
+    g.setScannedEntities({})
+    g.exitIsolationMode()
+    g.closeCodePane()
+    g.clearDescription()
+    g.clearVulnerability()
+    g.setRiskData({}, {})
     scanCache.current = {}
-  }, [repoKey, setActiveNode, setNodes, setEdges, setScannedEntities, exitIsolationMode, closeCodePane])
+  }, [repoKey])
+
+  // Cache token for AI output: `owner/repo@treeSha`. Changing it prunes stale
+  // (modified-repo) entries so cached text persists until the repo changes.
+  useEffect(() => {
+    useGraphStore.getState().setRepoCacheToken(`${owner}/${repo}@${sha}`)
+  }, [owner, repo, sha])
+
+  // Repo-wide risk index: scan the whole repo once per repo and count how many
+  // files import each path. Drives the Blast Radius heatmap independent of the
+  // currently-displayed subtree.
+  useEffect(() => {
+    let cancelled = false
+    async function loadRiskIndex() {
+      try {
+        const res = await fetch("/api/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ owner, repo, full: true }),
+        })
+        if (!res.ok || cancelled) return
+        const data = (await res.json()) as { entityMap: ScannedEntityMap }
+        if (cancelled) return
+        const { counts, importers } = computeImportGraph(data.entityMap)
+        useGraphStore.getState().setRiskData(counts, importers)
+      } catch {
+        // Heatmap simply stays neutral if the risk scan fails.
+      }
+    }
+    loadRiskIndex()
+    return () => {
+      cancelled = true
+    }
+  }, [owner, repo])
 
   useEffect(() => {
     // Read the *live* selection: the reset effect above runs first on a repo
     // change and clears it, so this avoids rebuilding the previous repo's graph
-    // from a stale node captured in this render's closure.
+    // from a stale node captured in this render's closure. `activeNode` stays in
+    // the deps purely to re-trigger this effect when the selection changes.
+    void activeNode
     const node = useCanvasStore.getState().activeNode
     if (!node || isIsolationMode) return
 
@@ -90,14 +127,15 @@ export default function CanvasPreview({ owner, repo }: CanvasPreviewProps) {
         }
       }
 
-      setScannedEntities(entityMap)
+      const g = useGraphStore.getState()
+      g.setScannedEntities(entityMap)
       const { nodes, edges } = buildGraphFromTree(subtree, repoName, entityMap)
-      setNodes(nodes)
-      setEdges(edges)
+      g.setNodes(nodes)
+      g.setEdges(edges)
     }
 
     loadGraph()
-  }, [activeNode, isIsolationMode, owner, repo, setNodes, setEdges, setScannedEntities])
+  }, [activeNode, isIsolationMode, owner, repo])
 
   return (
     <div className="w-full h-full">

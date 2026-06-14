@@ -10,6 +10,7 @@ type FunctionNodeType = Node<GraphNodeData & { zoomLevel?: number }>
 export default function FunctionNode({ data, selected, id }: NodeProps<FunctionNodeType>) {
   const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id, "function")
   const showOverlay = selected || hovered
+  const isBlast = data.viewMode === "BLAST_RADIUS"
 
   return (
     <div
@@ -20,6 +21,7 @@ export default function FunctionNode({ data, selected, id }: NodeProps<FunctionN
         border: `1.5px solid ${selected ? "#00E676" : "#00E67666"}`,
         borderRadius: 999,
         boxShadow: selected ? "0 0 12px rgba(0,230,118,0.2)" : undefined,
+        opacity: isBlast ? 0.4 : undefined,
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}

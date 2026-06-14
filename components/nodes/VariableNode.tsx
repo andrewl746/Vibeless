@@ -10,11 +10,12 @@ type VariableNodeType = Node<GraphNodeData & { zoomLevel?: number }>
 export default function VariableNode({ data, selected, id }: NodeProps<VariableNodeType>) {
   const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id, "variable")
   const showOverlay = selected || hovered
+  const isBlast = data.viewMode === "BLAST_RADIUS"
 
   return (
     <div
       className="relative flex items-center justify-center"
-      style={{ width: 64, height: 64 }}
+      style={{ width: 64, height: 64, opacity: isBlast ? 0.4 : undefined }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >

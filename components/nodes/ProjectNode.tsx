@@ -10,13 +10,14 @@ type ProjectNodeType = Node<GraphNodeData>
 export default function ProjectNode({ data, selected, id }: NodeProps<ProjectNodeType>) {
   const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id, "project")
   const showOverlay = selected || hovered
+  const isBlast = data.viewMode === "BLAST_RADIUS"
 
   return (
     <div
       className="relative flex items-center justify-center"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      style={{ width: 120, height: 104 }}
+      style={{ width: 120, height: 104, opacity: isBlast ? 0.4 : undefined }}
     >
       <div
         className="absolute inset-0 flex items-center justify-center"
