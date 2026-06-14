@@ -102,3 +102,64 @@ body {
   scrollbar-width: thin;
   scrollbar-color: #141B24 #090D14;
 }
+
+@keyframes binary-drift {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-3deg);
+    opacity: 0.08;
+  }
+  45% {
+    opacity: 0.22;
+  }
+  100% {
+    transform: translate3d(34px, -48px, 0) rotate(3deg);
+    opacity: 0.08;
+  }
+}
+
+@keyframes binary-digit-rise {
+  0% {
+    transform: translate3d(0, 42px, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--digit-opacity, 0.72);
+  }
+  48% {
+    opacity: calc(var(--digit-opacity, 0.72) * 0.5);
+  }
+  78% {
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, -150px, 0);
+    opacity: 0;
+  }
+}
+
+.binary-drift {
+  animation: binary-drift 18s ease-in-out infinite alternate;
+  text-shadow: 0 0 18px rgba(0, 163, 255, 0.32);
+}
+
+.binary-drift-green {
+  animation: binary-digit-rise var(--digit-speed, 3s) linear infinite;
+  text-shadow:
+    0 0 14px rgba(48, 255, 132, 0.38),
+    0 0 28px rgba(14, 185, 95, 0.22);
+}
+
+@keyframes typing-cursor-blink {
+  0%,
+  42% {
+    opacity: 1;
+  }
+  43%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.typing-cursor {
+  animation: typing-cursor-blink 0.86s steps(1, end) infinite;
+}
