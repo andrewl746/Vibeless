@@ -13,6 +13,17 @@ export default function FolderNode({ data, selected, id }: NodeProps<FolderNodeT
   const showDetails = (data.zoomLevel ?? 1) >= 0.5
   // In Blast Radius mode, structural nodes recede so file risk reads clearly.
   const isBlast = data.viewMode === "BLAST_RADIUS"
+  const sim = data.simulationStatus ?? "idle"
+  const accent =
+    sim === "running"
+      ? "#60A5FA"
+      : sim === "success"
+        ? "#10B981"
+        : sim === "error"
+          ? "#EF4444"
+          : selected
+            ? "#00A3FF"
+            : "#1E2A38"
 
   return (
     <div
@@ -20,16 +31,35 @@ export default function FolderNode({ data, selected, id }: NodeProps<FolderNodeT
       style={{
         width: 160,
         minHeight: 56,
-        background: "#090D14",
-        border: `1px solid ${selected ? "#00A3FF" : "#1E2A38"}`,
+        background:
+          sim === "running"
+            ? "#0B1730"
+            : sim === "success"
+              ? "#062016"
+              : sim === "error"
+                ? "#1F0A0E"
+                : "#090D14",
+        border: `1px solid ${accent}`,
         borderRadius: 8,
-        boxShadow: selected ? "0 0 16px rgba(0,163,255,0.12)" : undefined,
+        boxShadow:
+          sim === "running"
+            ? "0 0 14px rgba(96,165,250,0.45)"
+            : sim === "success"
+              ? "0 0 12px rgba(16,185,129,0.35)"
+              : sim === "error"
+                ? "0 0 14px rgba(239,68,68,0.5)"
+                : selected
+                  ? "0 0 16px rgba(0,163,255,0.12)"
+                  : undefined,
         opacity: isBlast ? 0.4 : undefined,
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <span className="font-mono text-[9px] text-text-muted uppercase tracking-widest pointer-events-none select-none">
+      <span
+        className="font-mono text-[9px] text-text-muted uppercase tracking-widest pointer-events-none select-none"
+        style={{ color: sim === "idle" ? undefined : accent }}
+      >
         FOLDER
       </span>
       <span className="font-mono text-xs text-white truncate pointer-events-none select-none">

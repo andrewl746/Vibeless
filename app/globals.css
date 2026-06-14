@@ -39,6 +39,149 @@
   pointer-events: none !important;
 }
 
+.flow-edge-pulse-core,
+.flow-edge-pulse-halo,
+.flow-edge-pulse-spark,
+.flow-edge-wake {
+  animation-duration: var(--flow-duration, 1.9s);
+  animation-fill-mode: forwards;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.flow-edge-pulse-core {
+  animation-name: flow-edge-light-pulse, flow-edge-light-bloom;
+  filter:
+    drop-shadow(0 0 5px rgba(191, 219, 254, 0.95))
+    drop-shadow(0 0 13px rgba(96, 165, 250, 0.85));
+}
+
+.flow-edge-pulse-halo {
+  animation-name: flow-edge-light-pulse, flow-edge-halo-bloom;
+  opacity: 0;
+  filter: blur(0.6px) drop-shadow(0 0 16px rgba(96, 165, 250, 0.95));
+}
+
+.flow-edge-pulse-spark {
+  animation-name: flow-edge-light-pulse, flow-edge-spark-flicker;
+  filter: drop-shadow(0 0 7px rgba(219, 234, 254, 1));
+}
+
+.flow-edge-wake {
+  animation-name: flow-edge-wake-slide, flow-edge-wake-fade;
+  opacity: 0;
+  filter: drop-shadow(0 0 9px rgba(37, 99, 235, 0.65));
+}
+
+.flow-edge-particle,
+.flow-edge-particle-glow {
+  filter: drop-shadow(0 0 8px rgba(147, 197, 253, 0.95));
+}
+
+.flow-edge-error {
+  animation: flow-edge-error-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes flow-edge-light-pulse {
+  0% {
+    stroke-dashoffset: 118;
+  }
+  12% {
+    stroke-dashoffset: 104;
+  }
+  72% {
+    stroke-dashoffset: 22;
+  }
+  100% {
+    stroke-dashoffset: -18;
+  }
+}
+
+@keyframes flow-edge-wake-slide {
+  0% {
+    stroke-dashoffset: 128;
+  }
+  18% {
+    stroke-dashoffset: 116;
+  }
+  78% {
+    stroke-dashoffset: 28;
+  }
+  100% {
+    stroke-dashoffset: -10;
+  }
+}
+
+@keyframes flow-edge-light-bloom {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.45;
+  }
+  34%,
+  78% {
+    opacity: 1;
+  }
+}
+
+@keyframes flow-edge-halo-bloom {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.18;
+  }
+  45%,
+  72% {
+    opacity: 0.38;
+  }
+}
+
+@keyframes flow-edge-spark-flicker {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  16% {
+    opacity: 0.35;
+  }
+  42% {
+    opacity: 1;
+  }
+  62% {
+    opacity: 0.5;
+  }
+  80% {
+    opacity: 0.92;
+  }
+}
+
+@keyframes flow-edge-wake-fade {
+  0%,
+  12%,
+  100% {
+    opacity: 0;
+  }
+  38% {
+    opacity: 0.18;
+  }
+  68% {
+    opacity: 0.34;
+  }
+}
+
+@keyframes flow-edge-error-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.55));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(239, 68, 68, 0.95));
+  }
+}
+
 /* Allow node overlays to overflow their node box and appear on top */
 .react-flow__node {
   overflow: visible !important;

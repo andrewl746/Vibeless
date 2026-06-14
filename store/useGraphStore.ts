@@ -4,6 +4,22 @@ import { create } from "zustand"
 import type { Node, Edge } from "@xyflow/react"
 import type { ScannedEntityMap } from "@/utils/codeScanner"
 import type { NodeKind, ViewMode, RiskLevel } from "@/components/nodes/types"
+import { generateMockSimulationRoute } from "@/utils/simulation"
+
+export type SimulationStatus = "idle" | "running" | "success" | "error"
+
+export interface SimulationStep {
+  nodeId: string
+  edgeId?: string
+  status: "success" | "error"
+  payloads?: string[]
+  delay: number
+}
+
+export interface SimulationEdgeState {
+  status: SimulationStatus
+  payloads: string[]
+}
 
 interface GraphSnapshot {
   nodes: Node[]
@@ -64,6 +80,13 @@ interface GraphStore {
   vulnRiskLevel: RiskLevel
   vulnUsages: string[]
 
+  // Dynamic execution simulation
+  isSimulationActive: boolean
+  simulationSpeed: number
+  simulationNodeStates: Record<string, SimulationStatus>
+  simulationEdgeStates: Record<string, SimulationEdgeState>
+  simulationRunId: number
+
   setNodes: (nodes: Node[]) => void
   setEdges: (edges: Edge[]) => void
   setZoomLevel: (zoom: number) => void
@@ -92,6 +115,10 @@ interface GraphStore {
   ) => Promise<void>
   clearDescription: () => void
   setScannedEntities: (map: ScannedEntityMap) => void
+  startSimulation: (entryNodeId: string) => void
+  stopSimulation: () => void
+  resetSimulation: () => void
+  setSimulationSpeed: (speed: number) => void
   enterIsolationMode: (
     targetNodeId: string,
     targetName: string,
@@ -140,6 +167,12 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   vulnFetchId: 0,
   vulnRiskLevel: "low",
   vulnUsages: [],
+
+  isSimulationActive: false,
+  simulationSpeed: 1,
+  simulationNodeStates: {},
+  simulationEdgeStates: {},
+  simulationRunId: 0,
 
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
@@ -308,6 +341,98 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       descError: null,
     }),
   setScannedEntities: (map) => set({ allScannedEntities: map }),
+
+  startSimulation: (entryNodeId) => {
+    const { nodes, edges, simulationSpeed } = get()
+    const steps = generateMockSimulationRoute(nodes, edges, entryNodeId)
+    const nodeStates: Record<string, SimulationStatus> = Object.fromEntries(
+      nodes.map((node) => [node.id, "idle"])
+    )
+    const edgeStates: Record<string, SimulationEdgeState> = Object.fromEntries(
+      edges.map((edge) => [edge.id, { status: "idle", payloads: [] }])
+    )
+    const runId = get().simulationRunId + 1
+
+    set({
+      isSimulationActive: true,
+      simulationRunId: runId,
+      simulationNodeStates: {
+        ...nodeStates,
+        [entryNodeId]: "running",
+      },
+      simulationEdgeStates: edgeStates,
+    })
+
+    let elapsed = 0
+    for (const step of steps) {
+      const transitMs = step.delay / simulationSpeed
+
+      window.setTimeout(() => {
+        if (get().simulationRunId !== runId || !get().isSimulationActive) return
+
+        set((state) => ({
+          simulationNodeStates: {
+            ...state.simulationNodeStates,
+            [step.nodeId]: "running",
+          },
+          simulationEdgeStates: step.edgeId
+            ? {
+                ...state.simulationEdgeStates,
+                [step.edgeId]: {
+                  status: "running",
+                  payloads: step.payloads ?? [],
+                },
+              }
+            : state.simulationEdgeStates,
+        }))
+      }, elapsed)
+
+      elapsed += transitMs
+      window.setTimeout(() => {
+        if (get().simulationRunId !== runId || !get().isSimulationActive) return
+
+        set((state) => ({
+          simulationNodeStates: {
+            ...state.simulationNodeStates,
+            [step.nodeId]: step.status,
+          },
+          simulationEdgeStates: step.edgeId
+            ? {
+                ...state.simulationEdgeStates,
+                [step.edgeId]: {
+                  status: step.status,
+                  payloads: step.payloads ?? [],
+                },
+              }
+            : state.simulationEdgeStates,
+        }))
+      }, elapsed)
+
+      elapsed += 120 / simulationSpeed
+    }
+
+    window.setTimeout(() => {
+      if (get().simulationRunId !== runId) return
+      set({ isSimulationActive: false })
+    }, elapsed + 250)
+  },
+
+  stopSimulation: () =>
+    set((state) => ({
+      isSimulationActive: false,
+      simulationRunId: state.simulationRunId + 1,
+    })),
+
+  resetSimulation: () =>
+    set((state) => ({
+      isSimulationActive: false,
+      simulationRunId: state.simulationRunId + 1,
+      simulationNodeStates: {},
+      simulationEdgeStates: {},
+    })),
+
+  setSimulationSpeed: (speed) =>
+    set({ simulationSpeed: Math.min(2, Math.max(0.5, speed)) }),
 
   enterIsolationMode: (targetNodeId, targetName, targetKind, dependencies, dependencyEdges) => {
     const { nodes, edges } = get()

@@ -15,4 +15,5 @@ export interface GraphNodeData extends Record<string, unknown> {
   viewMode?: ViewMode
   riskLevel?: RiskLevel
   inwardCount?: number
+  simulationStatus?: "idle" | "running" | "success" | "error"
 }

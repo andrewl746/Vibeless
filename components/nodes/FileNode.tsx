@@ -41,12 +41,31 @@ export default function FileNode({ data, selected, id }: NodeProps<FileNodeType>
 
   const isBlast = data.viewMode === "BLAST_RADIUS"
   const risk = data.riskLevel ?? "low"
+  const sim = data.simulationStatus ?? "idle"
 
   const style: CSSProperties = {
     width: 140,
     minHeight: 48,
     borderRadius: 4,
-    ...(isBlast
+    ...(sim === "running"
+      ? {
+          background: "#0B1730",
+          border: "1px solid #60A5FA",
+          boxShadow: "0 0 16px rgba(96,165,250,0.45)",
+        }
+      : sim === "success"
+        ? {
+            background: "#062016",
+            border: "1px solid #10B981",
+            boxShadow: "0 0 14px rgba(16,185,129,0.35)",
+          }
+        : sim === "error"
+          ? {
+              background: "#1F0A0E",
+              border: "1px solid #EF4444",
+              boxShadow: "0 0 16px rgba(239,68,68,0.5)",
+            }
+          : isBlast
       ? RISK_STYLE[risk]
       : {
           background: "#06090E",
@@ -57,7 +76,16 @@ export default function FileNode({ data, selected, id }: NodeProps<FileNodeType>
         }),
   }
 
-  const tagColor = isBlast ? RISK_TAG_COLOR[risk] : "#00A3FF"
+  const tagColor =
+    sim === "running"
+      ? "#60A5FA"
+      : sim === "success"
+        ? "#10B981"
+        : sim === "error"
+          ? "#EF4444"
+          : isBlast
+            ? RISK_TAG_COLOR[risk]
+            : "#00A3FF"
 
   return (
     <div

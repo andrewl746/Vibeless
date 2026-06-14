@@ -14,6 +14,7 @@ import {
   type Edge,
   type Viewport,
   type NodeTypes,
+  type EdgeTypes,
   ReactFlowProvider,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
@@ -26,6 +27,8 @@ import DescriptionModal from "./DescriptionModal"
 import VulnerabilityModal from "./VulnerabilityModal"
 import ViewModeDock from "./ViewModeDock"
 import SearchBar from "./SearchBar"
+import SimulationToolbar from "./SimulationToolbar"
+import AnimatedFlowEdge from "./AnimatedFlowEdge"
 import ProjectNode from "@/components/nodes/ProjectNode"
 import FolderNode from "@/components/nodes/FolderNode"
 import FileNode from "@/components/nodes/FileNode"
@@ -45,6 +48,10 @@ const nodeTypes: NodeTypes = {
   variableNode: VariableNode as NodeTypes[string],
 }
 
+const edgeTypes: EdgeTypes = {
+  animatedFlowEdge: AnimatedFlowEdge as EdgeTypes[string],
+}
+
 const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, ref) {
   const storeNodes = useGraphStore((s) => s.nodes) as Node<GraphNodeData>[]
   const storeEdges = useGraphStore((s) => s.edges)
@@ -55,6 +62,9 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   const isCodePaneOpen = useGraphStore((s) => s.isCodePaneOpen)
   const currentViewMode = useGraphStore((s) => s.currentViewMode)
   const riskCounts = useGraphStore((s) => s.riskCounts)
+  const isSimulationActive = useGraphStore((s) => s.isSimulationActive)
+  const simulationNodeStates = useGraphStore((s) => s.simulationNodeStates)
+  const simulationEdgeStates = useGraphStore((s) => s.simulationEdgeStates)
   // The applied semantic-zoom tier (frozen by the store while layout is locked).
   const effectiveTier = useGraphStore((s) => s.appliedZoomTier)
   const setStoreNodes = useGraphStore((s) => s.setNodes)
@@ -164,10 +174,27 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
             viewMode: currentViewMode,
             riskLevel,
             inwardCount: inward,
+            simulationStatus: simulationNodeStates[n.id] ?? "idle",
           },
         }
       }),
-    [nodes, zoomLevel, currentViewMode, riskCounts]
+    [nodes, zoomLevel, currentViewMode, riskCounts, simulationNodeStates]
+  )
+
+  const enrichedEdges = useMemo(
+    () =>
+      edges.map((edge) => {
+        const simulationState = simulationEdgeStates[edge.id]
+        const shouldAnimate =
+          isSimulationActive || (simulationState && simulationState.status !== "idle")
+        return shouldAnimate
+          ? {
+              ...edge,
+              type: "animatedFlowEdge",
+            }
+          : edge
+      }),
+    [edges, isSimulationActive, simulationEdgeStates]
   )
 
   function handleFocusNode(id: string) {
@@ -182,14 +209,16 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
       <VulnerabilityModal />
       <ViewModeDock />
       <SearchBar onFocus={handleFocusNode} />
+      <SimulationToolbar />
 
       <ReactFlow
         nodes={enrichedNodes}
-        edges={edges}
+        edges={enrichedEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}
