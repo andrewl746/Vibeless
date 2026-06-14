@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import { auth } from "@/auth"
-import { getCachedAi, setCachedAi } from "@/lib/aiCacheServer"
+import { getCachedAi, setCachedAi, parseRepoToken } from "@/lib/aiCacheServer"
 
 // Stream a fixed string back (used for cache hits) so the client's streaming
 // reader works identically whether the text came from Claude or Firestore.
@@ -46,10 +46,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 })
   }
 
-  // Shared Firestore cache, keyed by repo content + entity. Serve a hit directly.
-  const cacheKey = cacheToken ? `desc:${cacheToken}:${type}:${path}:${name}` : null
+  // Shared Firestore cache: one doc per (repo, entity), validated against the
+  // current tree SHA. Serve a fresh hit directly; a stale/missing one regenerates
+  // and overwrites the doc below.
+  const { repoId, sha } = cacheToken ? parseRepoToken(cacheToken) : { repoId: "", sha: "" }
+  const cacheKey = cacheToken && sha ? `desc:${repoId}:${type}:${path}:${name}` : null
   if (cacheKey) {
-    const cached = await getCachedAi(cacheKey)
+    const cached = await getCachedAi(cacheKey, sha)
     if (cached !== null) return streamText(cached)
   }
 
@@ -114,7 +117,7 @@ export async function POST(req: NextRequest) {
         controller.close()
       }
       // Persist the completed result to the shared cache (best-effort).
-      if (cacheKey) await setCachedAi(cacheKey, full, { kind: "desc", type, path, name })
+      if (cacheKey) await setCachedAi(cacheKey, sha, full, { kind: "desc", type, path, name })
     },
   })
 

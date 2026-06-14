@@ -94,7 +94,7 @@ export default function NodeOverlay({ id, data }: NodeOverlayProps) {
     <>
       {/* Inline floating action menu */}
       <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 flex flex-col gap-1 pointer-events-auto">
-        {data.kind === "file" && (
+        {data.kind === "file" && data.viewMode === "BLAST_RADIUS" && (
           <button
             onClick={() =>
               fetchNodeVulnerability(
