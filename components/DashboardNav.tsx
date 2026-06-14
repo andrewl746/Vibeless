@@ -1,5 +1,6 @@
 import Image from "next/image"
 import { signOut } from "@/auth"
+import FlowboardLogo from "@/components/FlowboardLogo"
 
 interface DashboardNavProps {
   userName: string | null | undefined
@@ -10,10 +11,7 @@ export default function DashboardNav({ userName, userImage }: DashboardNavProps)
   return (
     <header className="flex items-center justify-between border-b border-[#9CDCFE]/20 bg-[#07131a]/95 px-6 py-3 shadow-[0_12px_36px_rgba(0,0,0,0.28)] shrink-0">
       <div className="flex items-center gap-4">
-        <span className="font-mono font-semibold tracking-widest uppercase text-sm">
-          <span className="text-[#9CDCFE]">Flow</span>
-          <span className="text-[#4EC9B0]">board</span>
-        </span>
+        <FlowboardLogo iconSize={34} wordmarkClassName="text-base" />
         <span className="text-xs font-mono text-[#9CDCFE]/80 border border-[#9CDCFE]/25 bg-[#9CDCFE]/8 px-2 py-0.5 rounded">
           PROJECT [UNSAVED]
         </span>

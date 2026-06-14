@@ -1,5 +1,6 @@
 import { auth, isGitHubConfigured, signIn } from "@/auth";
 import AnimatedTitleWord from "../components/AnimatedTitleWord";
+import FlowboardLogo from "@/components/FlowboardLogo";
 import LandingNetworkBackground from "../components/LandingNetworkBackground";
 import { FileCode2, LogIn } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -101,99 +102,7 @@ export default async function LandingPage() {
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6">
           <nav className="flex items-center justify-between rounded-full border border-white/10 bg-black/20 px-4 py-3 backdrop-blur-xl">
             <div className="flex items-center gap-3.5">
-              <span className="relative grid h-12 w-12 place-items-center">
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 64 64"
-                  className="h-12 w-12 overflow-visible"
-                >
-                  <defs>
-                    <linearGradient id="logo-shell" x1="12" y1="8" x2="52" y2="56">
-                      <stop stopColor="#06111d" />
-                      <stop offset="1" stopColor="#010409" />
-                    </linearGradient>
-                    <pattern
-                      id="logo-honeycomb"
-                      width="17"
-                      height="14.7"
-                      patternUnits="userSpaceOnUse"
-                      patternTransform="translate(1 0)"
-                    >
-                      <path
-                        d="M4.25 0.75h8.5l4.25 6.6-4.25 6.6h-8.5L0 7.35z"
-                        fill="none"
-                        stroke="#4EC9B0"
-                        strokeWidth="0.75"
-                        opacity="0.16"
-                      />
-                    </pattern>
-                    <filter id="logo-green-glow" x="-40%" y="-40%" width="180%" height="180%">
-                      <feGaussianBlur stdDeviation="2.6" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <polygon
-                    points="32 4 56 18 56 46 32 60 8 46 8 18"
-                    fill="url(#logo-shell)"
-                    stroke="#4EC9B0"
-                    strokeWidth="2.25"
-                    strokeLinejoin="round"
-                  />
-                  <polygon
-                    points="32 4 56 18 56 46 32 60 8 46 8 18"
-                    fill="url(#logo-honeycomb)"
-                    opacity="0.72"
-                  />
-                  <path
-                    d="M15 23 H25 L32 48 L48 20"
-                    fill="none"
-                    stroke="#4EC9B0"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="5.4"
-                    filter="url(#logo-green-glow)"
-                  />
-                  <path
-                    d="M15 23 H25 L32 48 L48 20"
-                    fill="none"
-                    stroke="#9CDCFE"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.7"
-                    opacity="0.82"
-                  />
-                  {[
-                    ["41", "30", "50"],
-                    ["39", "37", "48"],
-                    ["37", "44", "45"],
-                  ].map(([x1, y, x2]) => (
-                    <line
-                      key={y}
-                      x1={x1}
-                      y1={y}
-                      x2={x2}
-                      y2={y}
-                      stroke="#4EC9B0"
-                      strokeLinecap="round"
-                      strokeWidth="3.2"
-                      opacity="0.86"
-                      filter="url(#logo-green-glow)"
-                    />
-                  ))}
-                </svg>
-              </span>
-              <span className="relative font-mono text-lg font-black uppercase tracking-[0.18em]">
-                <span className="text-[#9CDCFE] drop-shadow-[0_0_14px_rgba(156,220,254,0.28)]">
-                  Flow
-                </span>
-                <span className="text-[#4EC9B0] drop-shadow-[0_0_14px_rgba(78,201,176,0.22)]">
-                  board
-                </span>
-                <span className="absolute -bottom-1 left-0 h-px w-full bg-gradient-to-r from-[#4EC9B0] via-[#9CDCFE] to-transparent opacity-70" />
-              </span>
+              <FlowboardLogo iconSize={48} wordmarkClassName="text-2xl" />
             </div>
 
             <div className="hidden items-center gap-8 font-mono text-xs uppercase tracking-widest text-slate-400 md:flex">
