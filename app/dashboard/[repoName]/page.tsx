@@ -33,7 +33,7 @@ export default async function RepoPage({
   })
 
   return (
-    <div className="flex flex-col h-screen bg-bg-deep overflow-hidden">
+    <div className="flex flex-col h-screen bg-[linear-gradient(180deg,#07131a_0%,#06090E_100%)] overflow-hidden">
       <DashboardNav
         userName={session.user?.name}
         userImage={session.user?.image}
@@ -42,19 +42,19 @@ export default async function RepoPage({
       <div className="flex flex-1 overflow-hidden">
 
         {/* Left Sidebar — file tree (all files visible) */}
-        <aside className="w-64 shrink-0 flex flex-col border-r border-border-muted bg-bg-panel overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border-muted shrink-0">
-            <span className="font-mono text-xs text-text-muted uppercase tracking-widest">
+        <aside className="w-64 shrink-0 flex flex-col border-r border-[#9CDCFE]/20 bg-[#0b1720]/95 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-[#9CDCFE]/15 shrink-0">
+            <span className="font-mono text-xs text-[#9CDCFE] uppercase tracking-widest">
               [ FILES ]
             </span>
             <Link
               href="/dashboard"
-              className="font-mono text-xs text-text-muted hover:text-white transition-colors"
+              className="font-mono text-xs text-[#4EC9B0]/80 hover:text-[#4EC9B0] transition-colors"
             >
               ← back
             </Link>
           </div>
-          <div className="flex flex-col gap-0.5 px-1 py-1 border-b border-border-muted shrink-0">
+          <div className="flex flex-col gap-0.5 px-1 py-1 border-b border-[#9CDCFE]/15 shrink-0">
             <RepoRootButton repoName={decoded} tree={tree} />
           </div>
           <div className="flex-1 overflow-y-auto sidebar-scroll">

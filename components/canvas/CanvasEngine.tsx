@@ -22,7 +22,6 @@ import "@xyflow/react/dist/style.css"
 import { useGraphStore } from "@/store/useGraphStore"
 import { useCanvasStore } from "@/store/useCanvasStore"
 import { layoutGraph } from "@/utils/layout"
-import IsolationOverlay from "./IsolationOverlay"
 import DescriptionModal from "./DescriptionModal"
 import VulnerabilityModal from "./VulnerabilityModal"
 import ViewModeDock from "./ViewModeDock"
@@ -74,7 +73,6 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   // The applied semantic-zoom tier (frozen by the store while layout is locked).
   const effectiveTier = useGraphStore((s) => s.appliedZoomTier)
   const setStoreNodes = useGraphStore((s) => s.setNodes)
-  const isIsolationMode = useGraphStore((s) => s.isIsolationMode)
 
   const activeNode = useCanvasStore((s) => s.activeNode)
 
@@ -100,7 +98,6 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
     } else {
       const visible = storeNodes.filter((n) => {
         const k = n.data.kind
-        if (isIsolationMode) return true
         if (k !== "function" && k !== "variable") return true
         // Functions/variables are revealed purely by zooming in.
         if (k === "function") return effectiveTier >= 1
@@ -122,7 +119,7 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
       fitPendingRef.current = false
       requestAnimationFrame(() => fitView({ duration: 600, padding: 0.2 }))
     }
-  }, [storeNodes, storeEdges, effectiveTier, isIsolationMode, isTechMode, techStack, setNodes, setEdges, fitView])
+  }, [storeNodes, storeEdges, effectiveTier, isTechMode, techStack, setNodes, setEdges, fitView])
 
   // Switching into/out of the Tech Stack lens swaps the entire graph — refit.
   useEffect(() => {
@@ -229,7 +226,6 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
 
   return (
     <div className="relative w-full h-full">
-      <IsolationOverlay />
       <DescriptionModal />
       <VulnerabilityModal />
       <ViewModeDock />
@@ -250,7 +246,7 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}
         maxZoom={3}
-        style={{ background: "#06090E" }}
+        style={{ background: "#07131a" }}
         defaultEdgeOptions={{
           style: { stroke: "#141B24", strokeWidth: 1.5 },
           animated: false,
@@ -261,8 +257,8 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
           <div style={{
             display: "flex",
             flexDirection: "column",
-            background: "#090D14",
-            border: "1px solid #141B24",
+            background: "#0b1720",
+            border: "1px solid #263244",
             borderRadius: 6,
             overflow: "hidden",
           }}>
@@ -346,13 +342,10 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
         </Panel>
         <MiniMap
           position="top-right"
+          className="flowboard-minimap"
+          maskColor="rgba(7,19,26,0.68)"
           style={{
             margin: 12,
-            background: "rgba(9, 13, 20, 0.94)",
-            border: "1px solid #263244",
-            borderRadius: 8,
-            boxShadow: "0 0 24px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.03)",
-            overflow: "hidden",
           }}
           nodeColor={(n) => {
             const kind = (n.data as GraphNodeData).kind

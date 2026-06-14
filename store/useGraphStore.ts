@@ -14,17 +14,14 @@ export interface SimulationStep {
   edgeId?: string
   status: "success" | "error"
   payloads?: string[]
+  reason?: string
   delay: number
 }
 
 export interface SimulationEdgeState {
   status: SimulationStatus
   payloads: string[]
-}
-
-interface GraphSnapshot {
-  nodes: Node[]
-  edges: Edge[]
+  reason?: string
 }
 
 // Semantic-zoom tier: which kinds of nodes are revealed at the current zoom.
@@ -36,11 +33,6 @@ function tierForZoom(zoom: number): number {
 interface GraphStore {
   nodes: Node[]
   edges: Edge[]
-  mainGraphSnapshot: GraphSnapshot | null
-  isIsolationMode: boolean
-  isolationTargetName: string | null
-  isolationTargetKind: NodeKind | null
-  activeIsolationTarget: string | null
   zoomLevel: number
   // The applied semantic-zoom tier that drives the visible node set. While
   // layoutLocked is true it is frozen so zooming doesn't expand/collapse nodes.
@@ -123,24 +115,11 @@ interface GraphStore {
   stopSimulation: () => void
   resetSimulation: () => void
   setSimulationSpeed: (speed: number) => void
-  enterIsolationMode: (
-    targetNodeId: string,
-    targetName: string,
-    targetKind: NodeKind,
-    dependencies: Node[],
-    dependencyEdges: Edge[]
-  ) => void
-  exitIsolationMode: () => void
 }
 
 export const useGraphStore = create<GraphStore>((set, get) => ({
   nodes: [],
   edges: [],
-  mainGraphSnapshot: null,
-  isIsolationMode: false,
-  isolationTargetName: null,
-  isolationTargetKind: null,
-  activeIsolationTarget: null,
   zoomLevel: 1,
   appliedZoomTier: tierForZoom(1),
   layoutLocked: false,
@@ -388,6 +367,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
                 [step.edgeId]: {
                   status: "running",
                   payloads: step.payloads ?? [],
+                  reason: step.reason,
                 },
               }
             : state.simulationEdgeStates,
@@ -409,6 +389,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
                 [step.edgeId]: {
                   status: step.status,
                   payloads: step.payloads ?? [],
+                  reason: step.reason,
                 },
               }
             : state.simulationEdgeStates,
@@ -440,31 +421,4 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
   setSimulationSpeed: (speed) =>
     set({ simulationSpeed: Math.min(2, Math.max(0.5, speed)) }),
-
-  enterIsolationMode: (targetNodeId, targetName, targetKind, dependencies, dependencyEdges) => {
-    const { nodes, edges } = get()
-    set({
-      mainGraphSnapshot: { nodes, edges },
-      isIsolationMode: true,
-      isolationTargetName: targetName,
-      isolationTargetKind: targetKind,
-      activeIsolationTarget: targetNodeId,
-      nodes: dependencies,
-      edges: dependencyEdges,
-    })
-  },
-
-  exitIsolationMode: () => {
-    const { mainGraphSnapshot } = get()
-    if (!mainGraphSnapshot) return
-    set({
-      nodes: mainGraphSnapshot.nodes,
-      edges: mainGraphSnapshot.edges,
-      mainGraphSnapshot: null,
-      isIsolationMode: false,
-      isolationTargetName: null,
-      isolationTargetKind: null,
-      activeIsolationTarget: null,
-    })
-  },
 }))

@@ -59,20 +59,6 @@ export function scanSource(path: string, source: string): ScannedFile {
   return { path, source, functions, variables }
 }
 
-/**
- * Relationship mapper: find all files in the entity map that contain a reference
- * to the given entity name. Returns the file paths that reference it.
- */
-export function findUsages(
-  entityName: string,
-  entityFilePath: string,
-  entityMap: ScannedEntityMap
-): string[] {
-  return Object.entries(entityMap)
-    .filter(([path, file]) => path !== entityFilePath && file.source.includes(entityName))
-    .map(([path]) => path)
-}
-
 /** Get the code snippet for a named entity within a scanned file */
 export function getEntitySnippet(
   entityName: string,

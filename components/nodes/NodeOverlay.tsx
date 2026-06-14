@@ -1,9 +1,7 @@
 "use client"
 
 import { useGraphStore } from "@/store/useGraphStore"
-import { findUsages } from "@/utils/codeScanner"
-import type { GraphNodeData, NodeKind, RiskLevel } from "./types"
-import type { Node, Edge } from "@xyflow/react"
+import type { GraphNodeData, RiskLevel } from "./types"
 
 interface NodeOverlayProps {
   id: string
@@ -42,15 +40,11 @@ function langFromPath(path?: string): string {
 }
 
 export default function NodeOverlay({ id, data }: NodeOverlayProps) {
-  const enterIsolationMode = useGraphStore((s) => s.enterIsolationMode)
   const fetchNodeDescription = useGraphStore((s) => s.fetchNodeDescription)
   const fetchNodeVulnerability = useGraphStore((s) => s.fetchNodeVulnerability)
   const openCodePane = useGraphStore((s) => s.openCodePane)
   const riskCounts = useGraphStore((s) => s.riskCounts)
   const riskImporters = useGraphStore((s) => s.riskImporters)
-  const allNodes = useGraphStore((s) => s.nodes)
-  const allEdges = useGraphStore((s) => s.edges)
-  const allScannedEntities = useGraphStore((s) => s.allScannedEntities)
 
   // Blast-impact data for this file node (computed repo-wide).
   const filePath = data.path ?? ""
@@ -58,37 +52,7 @@ export default function NodeOverlay({ id, data }: NodeOverlayProps) {
   const riskLevel: RiskLevel = inward >= 4 ? "critical" : inward >= 1 ? "moderate" : "low"
   const usages = riskImporters[filePath] ?? []
   const impact = IMPACT_STYLE[riskLevel]
-
-  function handleTrace() {
-    // Start with direct graph edges
-    const directEdges = allEdges.filter((e) => e.source === id || e.target === id)
-    const connectedIds = new Set(directEdges.flatMap((e) => [e.source, e.target]))
-
-    // Relationship mapper: find files that reference this entity by name
-    const filePath = data.path ?? ""
-    const usagePaths = findUsages(data.label, filePath, allScannedEntities)
-
-    // Add usage-based nodes and edges
-    const extraEdges: Edge[] = []
-    for (const usagePath of usagePaths) {
-      const usageNodeId = `node::${usagePath}`
-      const usageNode = allNodes.find((n) => n.id === usageNodeId)
-      if (usageNode) {
-        connectedIds.add(usageNodeId)
-        extraEdges.push({
-          id: `e-trace-${id}-${usageNodeId}`,
-          source: id,
-          target: usageNodeId,
-          style: { stroke: "#00E676", strokeWidth: 1.5, strokeDasharray: "4 3" },
-          animated: true,
-        })
-      }
-    }
-
-    const depNodes = allNodes.filter((n) => connectedIds.has(n.id)) as Node<GraphNodeData>[]
-    const allTraceEdges = [...directEdges, ...extraEdges]
-    enterIsolationMode(id, data.label, data.kind as NodeKind, depNodes, allTraceEdges)
-  }
+  const hasCode = typeof data.code === "string" && data.code.trim().length > 0
 
   return (
     <>
@@ -126,22 +90,15 @@ export default function NodeOverlay({ id, data }: NodeOverlayProps) {
           [ DESC ]
         </button>
         <button
-          onClick={() =>
-            openCodePane(
-              data.code ?? "// No code snippet available for this node.",
-              langFromPath(data.path),
-              data.label
-            )
-          }
-          className="font-mono text-[10px] px-3 py-1 bg-bg-deep border border-border-muted text-text-muted hover:text-white hover:border-accent-blue transition-colors rounded whitespace-nowrap"
+          onClick={() => {
+            if (!hasCode) return
+            openCodePane(data.code!, langFromPath(data.path), data.label)
+          }}
+          disabled={!hasCode}
+          title={hasCode ? "Open captured code" : "No code was captured for this node"}
+          className="font-mono text-[10px] px-3 py-1 bg-bg-deep border border-border-muted text-text-muted hover:text-white hover:border-accent-blue transition-colors rounded whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-border-muted disabled:hover:text-text-muted"
         >
           [ CODE ]
-        </button>
-        <button
-          onClick={handleTrace}
-          className="font-mono text-[10px] px-3 py-1 bg-bg-deep border border-[#00E67644] text-[#00E676]/60 hover:text-[#00E676] hover:border-[#00E676] transition-colors rounded whitespace-nowrap"
-        >
-          [ TRACE ]
         </button>
       </div>
     </>

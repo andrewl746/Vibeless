@@ -1,23 +1,33 @@
 import type { Edge, Node } from "@xyflow/react"
 import type { SimulationStep } from "@/store/useGraphStore"
 
-const TRANSIT_DELAY_MS = 1900
-
-function stableHash(value: string): number {
-  let hash = 0
-  for (let i = 0; i < value.length; i++) {
-    hash = (hash * 31 + value.charCodeAt(i)) >>> 0
-  }
-  return hash
-}
+const TRANSIT_DELAY_MS = 1500
 
 function payloadsForNode(node: Node, index: number): string[] {
   const kind = String(node.data?.kind ?? "node")
   const label = String(node.data?.label ?? node.id)
-  if (kind === "file") return [`module: ${label}`, `ctx: ${index}`]
-  if (kind === "function") return [`args: ${index}`, "config: {}"]
-  if (kind === "variable") return [`value: ${label}`]
-  return [`target: ${label}`]
+  if (kind === "file") return [`inspect file: ${label}`, `step ${index}`]
+  if (kind === "function") return [`inspect fn: ${label}`, `step ${index}`]
+  if (kind === "variable") return [`inspect value: ${label}`]
+  return [`inspect: ${label}`]
+}
+
+function scoreTarget(edge: Edge, node?: Node): number {
+  const kind = String(node?.data?.kind ?? "")
+  const label = String(node?.data?.label ?? "").toLowerCase()
+  const path = String(node?.data?.path ?? "").toLowerCase()
+  let score = 0
+
+  if (kind === "file") score += 40
+  if (kind === "function") score += 30
+  if (kind === "folder") score += 12
+  if (/page|route|layout|index|main|app/.test(label) || /\/(page|route|layout|index)\./.test(path)) {
+    score += 18
+  }
+  if (edge.id.includes("import")) score += 14
+  if (kind === "variable") score -= 10
+
+  return score
 }
 
 export function generateMockSimulationRoute(
@@ -39,56 +49,41 @@ export function generateMockSimulationRoute(
   }
 
   const steps: SimulationStep[] = []
-  const queue: Array<{ nodeId: string; depth: number; blocked: boolean }> = [
-    { nodeId: entryNodeId, depth: 0, blocked: false },
-  ]
+  const queue: Array<{ nodeId: string; depth: number }> = [{ nodeId: entryNodeId, depth: 0 }]
   const visited = new Set<string>()
 
-  while (queue.length > 0 && steps.length < 48) {
+  while (queue.length > 0 && steps.length < 32) {
     const current = queue.shift()!
     if (visited.has(current.nodeId)) continue
     visited.add(current.nodeId)
 
     const candidateEdges = outgoing.get(current.nodeId) ?? []
-    for (const edge of candidateEdges.slice(0, 5)) {
+    const rankedEdges = [...candidateEdges].sort(
+      (a, b) => scoreTarget(b, nodeById.get(b.target)) - scoreTarget(a, nodeById.get(a.target))
+    )
+
+    for (const edge of rankedEdges.slice(0, current.depth === 0 ? 4 : 3)) {
       if (visited.has(edge.target)) continue
 
       const target = nodeById.get(edge.target)
-      const kind = String(target?.data?.kind ?? "")
-      const shouldFail =
-        !current.blocked &&
-        current.depth >= 2 &&
-        kind === "function" &&
-        stableHash(`${edge.id}:${edge.target}`) % 100 < 15
-      const status: "success" | "error" =
-        current.blocked || shouldFail ? "error" : "success"
+      const kind = String(target?.data?.kind ?? "node")
 
       steps.push({
         nodeId: edge.target,
         edgeId: edge.id,
-        status,
+        status: "success",
         payloads: target
           ? payloadsForNode(target, steps.length + 1)
           : [`event: ${steps.length + 1}`],
+        reason:
+          edge.id.includes("import")
+            ? "import dependency to inspect next"
+            : `${kind} connected to the current onboarding path`,
         delay: TRANSIT_DELAY_MS,
       })
 
-      if (!current.blocked && !shouldFail) {
-        queue.push({ nodeId: edge.target, depth: current.depth + 1, blocked: false })
-      } else {
-        const downstream = outgoing.get(edge.target) ?? []
-        for (const childEdge of downstream.slice(0, 3)) {
-          const child = nodeById.get(childEdge.target)
-          steps.push({
-            nodeId: childEdge.target,
-            edgeId: childEdge.id,
-            status: "error",
-            payloads: child
-              ? [`halted: ${String(child.data?.label ?? child.id)}`]
-              : ["halted"],
-            delay: TRANSIT_DELAY_MS,
-          })
-        }
+      if (current.depth < 4) {
+        queue.push({ nodeId: edge.target, depth: current.depth + 1 })
       }
     }
   }
@@ -97,7 +92,8 @@ export function generateMockSimulationRoute(
     steps.push({
       nodeId: entryNodeId,
       status: "success",
-      payloads: ["entry: complete"],
+      payloads: ["single node: inspect here"],
+      reason: "no connected dependencies are visible yet",
       delay: 1200,
     })
   }

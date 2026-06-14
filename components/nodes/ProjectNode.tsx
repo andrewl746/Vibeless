@@ -14,9 +14,9 @@ export default function ProjectNode({ data, selected, id }: NodeProps<ProjectNod
   const sim = data.simulationStatus ?? "idle"
   const accent =
     sim === "running"
-      ? "#60A5FA"
+      ? "#9CDCFE"
       : sim === "success"
-        ? "#10B981"
+        ? "#4EC9B0"
         : sim === "error"
           ? "#EF4444"
           : "#ffffff"

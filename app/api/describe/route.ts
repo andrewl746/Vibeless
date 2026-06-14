@@ -19,12 +19,11 @@ function streamText(text: string): Response {
 }
 
 const SYSTEM_PROMPT =
-  "You are an elite developer onboarding assistant for Vibeless. Analyze the " +
-  "following code snippet. Provide a precise, casual, and plain-English " +
-  "explanation of exactly what this entity does, why it exists, and how it " +
-  "impacts the rest of the file system architecture. Avoid boilerplate " +
-  "introductions like 'Sure, here is...' or 'This code is...'. Jump straight " +
-  "into the breakdown."
+  "You are an onboarding summary writer for Flowboard. Analyze the following " +
+  "code entity and write a compact summary for a developer who is new to the " +
+  "repo. Keep it under 90 words. Use 2-3 short bullets max. Focus on what it " +
+  "does, why it matters, and one useful next place to inspect. Avoid boilerplate " +
+  "intros and avoid long architectural essays."
 
 interface DescribeBody {
   name: string
@@ -50,7 +49,7 @@ export async function POST(req: NextRequest) {
   // current tree SHA. Serve a fresh hit directly; a stale/missing one regenerates
   // and overwrites the doc below.
   const { repoId, sha } = cacheToken ? parseRepoToken(cacheToken) : { repoId: "", sha: "" }
-  const cacheKey = cacheToken && sha ? `desc:${repoId}:${type}:${path}:${name}` : null
+  const cacheKey = cacheToken && sha ? `desc-summary-v2:${repoId}:${type}:${path}:${name}` : null
   if (cacheKey) {
     const cached = await getCachedAi(cacheKey, sha)
     if (cached !== null) return streamText(cached)
@@ -83,7 +82,7 @@ export async function POST(req: NextRequest) {
   try {
     claudeStream = await client.messages.create({
       model: "claude-opus-4-8",
-      max_tokens: 1024,
+      max_tokens: 260,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userPrompt }],
       stream: true,

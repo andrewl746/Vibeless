@@ -45,7 +45,7 @@ const floatingBinary = [
   ["011001 /src /app", "left-[15%] top-[58%]", "text-[#C586C0]/18"],
   ["100101 context.map()", "right-[18%] top-[54%]", "text-[#9CDCFE]/18"],
   ["00110110 0101", "left-[42%] top-[12%]", "text-[#C586C0]/16"],
-  ["repo.trace = true", "right-[7%] top-[76%]", "text-[#4EC9B0]/18"],
+  ["repo.map = true", "right-[7%] top-[76%]", "text-[#4EC9B0]/18"],
 ];
 
 const bottomBinaryDigits = Array.from({ length: 96 }, (_, index) => {
@@ -187,10 +187,10 @@ export default async function LandingPage() {
               </span>
               <span className="relative font-mono text-lg font-black uppercase tracking-[0.18em]">
                 <span className="text-[#9CDCFE] drop-shadow-[0_0_14px_rgba(156,220,254,0.28)]">
-                  Vibe
+                  Flow
                 </span>
                 <span className="text-[#4EC9B0] drop-shadow-[0_0_14px_rgba(78,201,176,0.22)]">
-                  less
+                  board
                 </span>
                 <span className="absolute -bottom-1 left-0 h-px w-full bg-gradient-to-r from-[#4EC9B0] via-[#9CDCFE] to-transparent opacity-70" />
               </span>
@@ -219,7 +219,7 @@ export default async function LandingPage() {
               </h1>
 
               <p className="mx-auto mt-5 max-w-2xl text-pretty font-sans text-base leading-7 text-slate-300 sm:text-lg">
-                Vibeless maps structure, key flows, and contributor context
+                Flowboard maps structure, key flows, and contributor context
                 across fast-moving or inherited repositories.
               </p>
 
@@ -276,7 +276,7 @@ export default async function LandingPage() {
                       reserved for product imagery
                     </p>
                     <p className="mt-3 font-sans text-sm leading-6 text-slate-400">
-                      Reserved space for the Vibeless project screenshot,
+                      Reserved space for the Flowboard project screenshot,
                       dashboard capture, or repository map preview.
                     </p>
                   </div>

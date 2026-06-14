@@ -33,7 +33,6 @@ export default function CanvasPreview({ owner, repo, sha, techStack }: CanvasPre
   // actions are read via getState() inside effects so the dependency arrays stay
   // small and constant (a changing deps-array size breaks Fast Refresh / React).
   const activeNode = useCanvasStore((s) => s.activeNode)
-  const isIsolationMode = useGraphStore((s) => s.isIsolationMode)
   const scanCache = useRef<Record<string, ScannedEntityMap>>({})
 
   // `activeNode` lives in a global store that survives client-side navigation
@@ -52,7 +51,6 @@ export default function CanvasPreview({ owner, repo, sha, techStack }: CanvasPre
     g.setNodes([])
     g.setEdges([])
     g.setScannedEntities({})
-    g.exitIsolationMode()
     g.closeCodePane()
     g.clearDescription()
     g.clearVulnerability()
@@ -100,7 +98,7 @@ export default function CanvasPreview({ owner, repo, sha, techStack }: CanvasPre
     // the deps purely to re-trigger this effect when the selection changes.
     void activeNode
     const node = useCanvasStore.getState().activeNode
-    if (!node || isIsolationMode) return
+    if (!node) return
 
     const subtree: FileTreeNode[] = node.type === "folder" && node.children
       ? node.children
@@ -142,7 +140,7 @@ export default function CanvasPreview({ owner, repo, sha, techStack }: CanvasPre
     }
 
     loadGraph()
-  }, [activeNode, isIsolationMode, owner, repo])
+  }, [activeNode, owner, repo])
 
   return (
     <div className="w-full h-full">
