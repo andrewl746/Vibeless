@@ -4,10 +4,38 @@ import type { FileTreeNode } from "./parseTree"
 import { isGraphNode } from "./parseTree"
 import type { ScannedEntityMap } from "./codeScanner"
 
-const IMPORT_RE = /^import\s+.*?from\s+['"](.+)['"]/gm
+// Matches both `import ... from "x"` and `export ... from "x"`, including
+// multi-line specifier lists. `[^'"`;]` keeps each match from running past the
+// quote/semicolon that ends the statement.
+const IMPORT_RE = /(?:import|export)[^'"`;]*?from\s*['"]([^'"]+)['"]/g
+
+const SRC_EXT_RE = /\.(tsx|ts|jsx|js|mjs|cjs)$/i
 
 function layoutX(index: number, total: number, spread = 260): number {
   return (index - (total - 1) / 2) * spread
+}
+
+/**
+ * Normalize an import specifier to a comparable path tail so loose,
+ * IDE-style imports still resolve to a real file node. Handles:
+ *  - `@/` path aliases (strip the alias prefix)
+ *  - relative jumps (`./`, `../`, repeated)
+ *  - missing extensions (drop `.ts(x)` / `.js(x)` etc.)
+ *  - barrel imports (`/index`)
+ * Returns null for things we can't turn into a path key.
+ */
+function normalizeImportKey(spec: string): string | null {
+  let p = spec.trim()
+  if (p.startsWith("@/")) p = p.slice(2)
+  p = p.replace(/^(?:\.\.?\/)+/, "") // strip leading ./ and ../ runs
+  p = p.replace(SRC_EXT_RE, "")
+  p = p.replace(/\/index$/i, "")
+  return p.length > 0 ? p : null
+}
+
+/** Normalize a real file path the same way (sans extension / barrel). */
+function normalizeFileKey(path: string): string {
+  return path.replace(SRC_EXT_RE, "").replace(/\/index$/i, "")
 }
 
 /** Build graph from a FileTreeNode tree, enriched with scan data */
@@ -33,28 +61,87 @@ export function buildGraphFromTree(
     addNodeRecursive(item, projectId, x, 160, nodes, edges, entityMap)
   })
 
-  // Import-based dependency edges
+  // Import-based dependency edges. Resolve each import to a file node by
+  // matching the normalized import key against the tail of a normalized file
+  // path (so `../hooks/useAuth` and `@/hooks/useAuth` both hit `hooks/useAuth`).
   const fileNodes = nodes.filter((n) => n.data.kind === "file" && n.data.path)
+  const fileKeys = fileNodes.map((fn) => ({
+    node: fn,
+    key: normalizeFileKey(fn.data.path!),
+  }))
+  const seen = new Set<string>() // dedupe per source→target pair
+
   for (const node of fileNodes) {
     const src = entityMap[node.data.path!]?.source
     if (!src) continue
     IMPORT_RE.lastIndex = 0
     let m: RegExpExecArray | null
     while ((m = IMPORT_RE.exec(src))) {
-      const imp = m[1]
-      const target = fileNodes.find((fn) => fn.data.path?.includes(imp.replace(/^\.\//, "")))
-      if (target && target.id !== node.id) {
-        edges.push({
-          id: `e-import-${node.id}-${target.id}`,
-          source: node.id,
-          target: target.id,
-          style: { stroke: "#00A3FF33", strokeDasharray: "4 3" },
-        })
-      }
+      const importKey = normalizeImportKey(m[1])
+      if (!importKey) continue
+
+      const target = fileKeys.find(
+        ({ key }) => key === importKey || key.endsWith(`/${importKey}`)
+      )?.node
+      if (!target || target.id === node.id) continue
+
+      const pairId = `e-import-${node.id}-${target.id}`
+      if (seen.has(pairId)) continue
+      seen.add(pairId)
+      edges.push({
+        id: pairId,
+        source: node.id,
+        target: target.id,
+        style: { stroke: "#00A3FF33", strokeDasharray: "4 3" },
+      })
     }
   }
 
   return { nodes, edges }
+}
+
+export interface ImportGraph {
+  /** path -> number of other files importing it */
+  counts: Record<string, number>
+  /** path -> sorted list of file paths that import it */
+  importers: Record<string, string[]>
+}
+
+/**
+ * Repo-wide "Risk Index": for every scanned file, find which *other* scanned
+ * files import it. Independent of the displayed subtree, so a hub file
+ * (imported everywhere) reads as high-risk from any folder.
+ */
+export function computeImportGraph(entityMap: ScannedEntityMap): ImportGraph {
+  const fileKeys = Object.keys(entityMap).map((p) => ({
+    path: p,
+    key: normalizeFileKey(p),
+  }))
+  const importers: Record<string, Set<string>> = {}
+
+  for (const [path, file] of Object.entries(entityMap)) {
+    const src = file.source
+    if (!src) continue
+    IMPORT_RE.lastIndex = 0
+    let m: RegExpExecArray | null
+    while ((m = IMPORT_RE.exec(src))) {
+      const importKey = normalizeImportKey(m[1])
+      if (!importKey) continue
+      const target = fileKeys.find(
+        ({ key }) => key === importKey || key.endsWith(`/${importKey}`)
+      )
+      if (!target || target.path === path) continue
+      ;(importers[target.path] ??= new Set()).add(path)
+    }
+  }
+
+  const counts: Record<string, number> = {}
+  const importerLists: Record<string, string[]> = {}
+  for (const [target, set] of Object.entries(importers)) {
+    counts[target] = set.size
+    importerLists[target] = [...set].sort()
+  }
+  return { counts, importers: importerLists }
 }
 
 function addNodeRecursive(

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import DashboardNav from "@/components/DashboardNav"
 import FileTreeRoot from "@/components/FileTreeRoot"
+import RepoRootButton from "@/components/RepoRootButton"
 import CanvasWorkspace from "@/components/canvas/CanvasWorkspace"
 import { fetchRepoTree, fetchAuthenticatedUser } from "@/lib/github"
 import { parseTree } from "@/utils/parseTree"
@@ -21,7 +22,7 @@ export default async function RepoPage({
   const ownerLogin =
     session.login ?? (await fetchAuthenticatedUser(session.accessToken)).login
 
-  const rawTree = await fetchRepoTree(session.accessToken, ownerLogin, decoded)
+  const { tree: rawTree, sha } = await fetchRepoTree(session.accessToken, ownerLogin, decoded)
   const tree = parseTree(rawTree)
 
   return (
@@ -47,9 +48,7 @@ export default async function RepoPage({
             </Link>
           </div>
           <div className="flex flex-col gap-0.5 px-1 py-1 border-b border-border-muted shrink-0">
-            <span className="font-mono text-xs text-white/70 px-2 py-1 truncate">
-              {decoded}
-            </span>
+            <RepoRootButton repoName={decoded} tree={tree} />
           </div>
           <div className="flex-1 overflow-y-auto sidebar-scroll">
             <FileTreeRoot tree={tree} />
@@ -58,7 +57,7 @@ export default async function RepoPage({
 
         {/* Center Workspace — canvas engine + sliding code pane */}
         <main className="flex-1 relative overflow-hidden">
-          <CanvasWorkspace owner={ownerLogin} repo={decoded} />
+          <CanvasWorkspace owner={ownerLogin} repo={decoded} sha={sha} />
         </main>
 
       </div>

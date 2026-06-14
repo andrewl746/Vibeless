@@ -11,6 +11,8 @@ export default function FolderNode({ data, selected, id }: NodeProps<FolderNodeT
   const { hovered, onMouseEnter, onMouseLeave } = useNodeHover(id, "folder")
   const showOverlay = selected || hovered
   const showDetails = (data.zoomLevel ?? 1) >= 0.5
+  // In Blast Radius mode, structural nodes recede so file risk reads clearly.
+  const isBlast = data.viewMode === "BLAST_RADIUS"
 
   return (
     <div
@@ -22,6 +24,7 @@ export default function FolderNode({ data, selected, id }: NodeProps<FolderNodeT
         border: `1px solid ${selected ? "#00A3FF" : "#1E2A38"}`,
         borderRadius: 8,
         boxShadow: selected ? "0 0 16px rgba(0,163,255,0.12)" : undefined,
+        opacity: isBlast ? 0.4 : undefined,
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}

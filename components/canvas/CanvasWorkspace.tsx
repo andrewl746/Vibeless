@@ -8,12 +8,13 @@ import { useGraphStore } from "@/store/useGraphStore"
 interface CanvasWorkspaceProps {
   owner: string
   repo: string
+  sha: string
 }
 
 const MIN_PANE_PCT = 20
 const MAX_PANE_PCT = 75
 
-export default function CanvasWorkspace({ owner, repo }: CanvasWorkspaceProps) {
+export default function CanvasWorkspace({ owner, repo, sha }: CanvasWorkspaceProps) {
   const isCodePaneOpen = useGraphStore((s) => s.isCodePaneOpen)
   const closeCodePane = useGraphStore((s) => s.closeCodePane)
 
@@ -65,7 +66,7 @@ export default function CanvasWorkspace({ owner, repo }: CanvasWorkspaceProps) {
         className={`relative h-full ${transition}`}
         style={{ width: isCodePaneOpen ? `${100 - paneWidth}%` : "100%" }}
       >
-        <CanvasPreview owner={owner} repo={repo} />
+        <CanvasPreview owner={owner} repo={repo} sha={sha} />
       </div>
 
       {/* Sliding code pane */}
