@@ -38,7 +38,9 @@ const SYSTEM_PROMPT =
   "Blast Radius mode, Tech Stack mode, and onboarding workflow. Ground your " +
   "answer in the provided graph context. If context is missing, say what is " +
   "missing and suggest the next UI action. Do not pretend to inspect files that " +
-  "were not included. Avoid boilerplate like 'Sure'."
+  "were not included. Avoid boilerplate like 'Sure'. Format answers for a small " +
+  "chat panel: short paragraphs, real markdown bullet lists with blank lines " +
+  "before lists, and no giant single-paragraph markdown dumps."
 
 function compactContext(context: AssistantContext) {
   const visibleNodes = context.visibleNodes

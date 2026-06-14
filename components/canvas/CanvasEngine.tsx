@@ -346,6 +346,12 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
           maskColor="rgba(7,19,26,0.68)"
           style={{
             margin: 12,
+            background: "rgba(11, 23, 32, 0.96)",
+            border: "1px solid #9CDCFE",
+            borderRadius: 8,
+            boxShadow:
+              "0 0 24px rgba(0,0,0,0.45), 0 0 18px rgba(78,201,176,0.14), 0 0 28px rgba(156,220,254,0.14), inset 0 0 0 1px rgba(197,134,192,0.22)",
+            overflow: "hidden",
           }}
           nodeColor={(n) => {
             const kind = (n.data as GraphNodeData).kind

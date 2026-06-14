@@ -1,6 +1,8 @@
 "use client"
 
 import { FormEvent, useMemo, useState } from "react"
+import ReactMarkdown from "react-markdown"
+import type { Components } from "react-markdown"
 import { Bot, MessageCircle, Send, X } from "lucide-react"
 import { useGraphStore } from "@/store/useGraphStore"
 import { useCanvasStore } from "@/store/useCanvasStore"
@@ -18,6 +20,80 @@ const TONE_LABEL: Record<ChatTone, string> = {
   casual: "Casual",
   formal: "Formal",
   concise: "Concise",
+}
+
+const assistantMarkdownComponents: Components = {
+  p: ({ children }) => (
+    <p className="mb-2 last:mb-0 text-xs leading-5 tracking-wide text-white/82">
+      {children}
+    </p>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-semibold text-[#9CDCFE] drop-shadow-[0_0_10px_rgba(156,220,254,0.24)]">
+      {children}
+    </strong>
+  ),
+  em: ({ children }) => <em className="not-italic text-[#C586C0]">{children}</em>,
+  ul: ({ children }) => <ul className="mb-2 space-y-1.5 last:mb-0">{children}</ul>,
+  ol: ({ children }) => (
+    <ol className="mb-2 list-decimal space-y-1.5 pl-5 marker:text-[#4EC9B0] last:mb-0">
+      {children}
+    </ol>
+  ),
+  li: ({ children }) => (
+    <li className="relative list-none pl-4 text-xs leading-5 text-white/78 before:absolute before:left-0 before:top-[0.62em] before:h-1.5 before:w-1.5 before:-translate-y-1/2 before:rounded-full before:bg-[#4EC9B0] before:shadow-[0_0_10px_rgba(78,201,176,0.55)]">
+      {children}
+    </li>
+  ),
+  code: ({ children }) => (
+    <code className="rounded border border-[#9CDCFE]/15 bg-black/40 px-1.5 py-0.5 text-[11px] text-[#4EC9B0]">
+      {children}
+    </code>
+  ),
+  pre: ({ children }) => (
+    <pre className="my-2 overflow-x-auto rounded-md border border-[#9CDCFE]/15 bg-black/45 p-2 text-[11px] leading-5 text-[#4EC9B0]">
+      {children}
+    </pre>
+  ),
+  h1: ({ children }) => (
+    <h1 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[#9CDCFE]">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-[#9CDCFE]">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-[#C586C0]">
+      {children}
+    </h3>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="my-2 border-l-2 border-[#C586C0]/60 pl-3 text-white/70">
+      {children}
+    </blockquote>
+  ),
+  a: ({ children, href }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-[#9CDCFE] underline decoration-[#9CDCFE]/40 underline-offset-2 transition hover:text-white"
+    >
+      {children}
+    </a>
+  ),
+}
+
+function normalizeAssistantMarkdown(text: string) {
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/([^\n])\s+-\s+\*\*/g, "$1\n- **")
+    .replace(/([^\n])\s+(\d+\.)\s+\*\*/g, "$1\n$2 **")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
 }
 
 function summarizeKinds(nodes: Node<GraphNodeData>[]) {
@@ -174,17 +250,25 @@ export default function RepoAssistant() {
             </div>
           </div>
 
-          <div className="max-h-72 space-y-2 overflow-y-auto p-3">
+          <div className="max-h-[min(420px,calc(100vh-17rem))] space-y-3 overflow-y-auto p-3">
             {messages.map((message, index) => (
               <div
                 key={`${message.role}-${index}`}
-                className={`rounded-md border px-3 py-2 text-xs leading-5 ${
+                className={`rounded-lg border px-3 py-2.5 text-xs leading-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)] ${
                   message.role === "assistant"
-                    ? "border-[#4EC9B0]/20 bg-[#4EC9B0]/8 text-white"
-                    : "ml-8 border-[#C586C0]/25 bg-[#C586C0]/10 text-[#F3D6EF]"
+                    ? "mr-5 border-[#4EC9B0]/24 bg-[#07131a]/90 text-white"
+                    : "ml-8 border-[#C586C0]/28 bg-[#C586C0]/10 text-[#F3D6EF]"
                 }`}
               >
-                {message.text}
+                {message.role === "assistant" ? (
+                  <ReactMarkdown components={assistantMarkdownComponents}>
+                    {normalizeAssistantMarkdown(message.text)}
+                  </ReactMarkdown>
+                ) : (
+                  <p className="whitespace-pre-wrap text-xs leading-5 tracking-wide">
+                    {message.text}
+                  </p>
+                )}
               </div>
             ))}
             {isLoading ? (
