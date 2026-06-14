@@ -112,6 +112,21 @@ export default async function LandingPage() {
                       <stop stopColor="#06111d" />
                       <stop offset="1" stopColor="#010409" />
                     </linearGradient>
+                    <pattern
+                      id="logo-honeycomb"
+                      width="17"
+                      height="14.7"
+                      patternUnits="userSpaceOnUse"
+                      patternTransform="translate(1 0)"
+                    >
+                      <path
+                        d="M4.25 0.75h8.5l4.25 6.6-4.25 6.6h-8.5L0 7.35z"
+                        fill="none"
+                        stroke="#34f985"
+                        strokeWidth="0.75"
+                        opacity="0.16"
+                      />
+                    </pattern>
                     <filter id="logo-green-glow" x="-40%" y="-40%" width="180%" height="180%">
                       <feGaussianBlur stdDeviation="2.6" result="blur" />
                       <feMerge>
@@ -123,22 +138,17 @@ export default async function LandingPage() {
                   <polygon
                     points="32 4 56 18 56 46 32 60 8 46 8 18"
                     fill="url(#logo-shell)"
-                    stroke="#00A3FF"
+                    stroke="#34f985"
                     strokeWidth="2.25"
                     strokeLinejoin="round"
                   />
-                  <g
-                    fill="none"
-                    stroke="#00A3FF"
-                    strokeWidth="1"
-                    opacity="0.18"
-                  >
-                    <path d="M17 20h10l5 8-5 8H17l-5-8z" />
-                    <path d="M34 16h10l5 8-5 8H34l-5-8z" />
-                    <path d="M29 34h10l5 8-5 8H29l-5-8z" />
-                  </g>
+                  <polygon
+                    points="32 4 56 18 56 46 32 60 8 46 8 18"
+                    fill="url(#logo-honeycomb)"
+                    opacity="0.72"
+                  />
                   <path
-                    d="M15 20 H25 L32 45 L48 17"
+                    d="M15 23 H25 L32 48 L48 20"
                     fill="none"
                     stroke="#34f985"
                     strokeLinecap="round"
@@ -147,7 +157,7 @@ export default async function LandingPage() {
                     filter="url(#logo-green-glow)"
                   />
                   <path
-                    d="M15 20 H25 L32 45 L48 17"
+                    d="M15 23 H25 L32 48 L48 20"
                     fill="none"
                     stroke="#a7ffc8"
                     strokeLinecap="round"
@@ -156,9 +166,9 @@ export default async function LandingPage() {
                     opacity="0.82"
                   />
                   {[
-                    ["41", "27", "50"],
-                    ["39", "34", "48"],
-                    ["37", "41", "45"],
+                    ["41", "30", "50"],
+                    ["39", "37", "48"],
+                    ["37", "44", "45"],
                   ].map(([x1, y, x2]) => (
                     <line
                       key={y}
