@@ -9,12 +9,13 @@ const githubClientSecret =
   process.env.AUTH_GITHUB_SECRET ??
   process.env.GITHUB_SECRET ??
   process.env.GITHUB_CLIENT_SECRET
+export const isGitHubConfigured = Boolean(githubClientId && githubClientSecret)
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET,
   trustHost: true,
   providers:
-    githubClientId && githubClientSecret
+    isGitHubConfigured
       ? [
           GitHub({
             clientId: githubClientId,

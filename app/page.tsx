@@ -1,4 +1,4 @@
-import { auth, signIn } from "@/auth";
+import { auth, isGitHubConfigured, signIn } from "@/auth";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
@@ -25,16 +25,24 @@ export default async function Home() {
         <form
           action={async () => {
             "use server";
-            await signIn("github");
+            if (!isGitHubConfigured) return;
+            await signIn("github", { redirectTo: "/dashboard" });
           }}
         >
           <button
             type="submit"
-            className="border border-border-muted bg-bg-panel hover:bg-border-muted text-white px-4 py-2 rounded transition-colors font-mono text-sm tracking-wide"
+            disabled={!isGitHubConfigured}
+            className="border border-border-muted bg-bg-panel hover:bg-border-muted text-white px-4 py-2 rounded transition-colors font-mono text-sm tracking-wide disabled:cursor-not-allowed disabled:text-text-muted"
           >
             Sign in with GitHub
           </button>
         </form>
+        {!isGitHubConfigured ? (
+          <p className="text-center font-mono text-xs leading-6 text-text-muted">
+            Add AUTH_GITHUB_ID and AUTH_GITHUB_SECRET to .env.local, then
+            restart the dev server.
+          </p>
+        ) : null}
       </div>
     </div>
   );

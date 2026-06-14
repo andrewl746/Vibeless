@@ -2,6 +2,20 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Create a GitHub OAuth app and add these values to `.env.local`:
+
+```bash
+AUTH_SECRET=your-generated-auth-secret
+AUTH_GITHUB_ID=your-github-oauth-client-id
+AUTH_GITHUB_SECRET=your-github-oauth-client-secret
+```
+
+For local development, set the GitHub OAuth callback URL to:
+
+```text
+http://localhost:3000/api/auth/callback/github
+```
+
 First, run the development server:
 
 ```bash

@@ -1,4 +1,4 @@
-import { auth, signIn } from "@/auth";
+import { auth, isGitHubConfigured, signIn } from "@/auth";
 import AnimatedTitleWord from "../../components/AnimatedTitleWord";
 import LandingNetworkBackground from "../../components/LandingNetworkBackground";
 import { FileCode2, LogIn } from "lucide-react";
@@ -8,24 +8,28 @@ import type { CSSProperties } from "react";
 function GitHubButton({
   label = "Get started with GitHub",
   variant = "light",
+  disabled = false,
 }: {
   label?: string;
   variant?: "light" | "dark";
+  disabled?: boolean;
 }) {
   const className =
     variant === "light"
-      ? "border-white/20 bg-white text-bg-deep hover:bg-slate-200 focus:ring-accent-blue focus:ring-offset-bg-deep"
-      : "border-white/15 bg-white/8 text-white hover:bg-white/12 focus:ring-accent-blue focus:ring-offset-black";
+      ? "border-white/20 bg-white text-bg-deep hover:bg-slate-200 focus:ring-accent-blue focus:ring-offset-bg-deep disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
+      : "border-white/15 bg-white/8 text-white hover:bg-white/12 focus:ring-accent-blue focus:ring-offset-black disabled:cursor-not-allowed disabled:bg-white/5 disabled:text-slate-500";
 
   return (
     <form
       action={async () => {
         "use server";
-        await signIn("github");
+        if (!isGitHubConfigured) return;
+        await signIn("github", { redirectTo: "/dashboard" });
       }}
     >
       <button
         type="submit"
+        disabled={disabled}
         className={`inline-flex h-12 items-center justify-center gap-3 rounded-md border px-5 font-mono text-sm font-semibold uppercase tracking-wide transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${className}`}
       >
         <LogIn className="h-5 w-5" aria-hidden="true" />
@@ -97,46 +101,64 @@ export default async function LandingPage() {
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6">
           <nav className="flex items-center justify-between rounded-full border border-white/10 bg-black/20 px-4 py-3 backdrop-blur-xl">
             <div className="flex items-center gap-3.5">
-              <span className="relative grid h-12 w-12 place-items-center bg-accent-blue shadow-[0_0_0_1px_rgba(0,163,255,0.38),0_0_30px_rgba(0,163,255,0.28)] [clip-path:polygon(25%_4%,75%_4%,100%_50%,75%_96%,25%_96%,0_50%)]">
-                <span className="absolute inset-[2px] bg-[radial-gradient(circle_at_56%_48%,rgba(48,255,132,0.16),transparent_36%),linear-gradient(135deg,#050a12,#02060b_72%,#000)] [clip-path:polygon(25%_4%,75%_4%,100%_50%,75%_96%,25%_96%,0_50%)]" />
+              <span className="relative grid h-12 w-12 place-items-center">
                 <svg
                   aria-hidden="true"
                   viewBox="0 0 64 64"
-                  className="relative h-11 w-11 overflow-visible drop-shadow-[0_0_12px_rgba(48,255,132,0.78)]"
+                  className="h-12 w-12 overflow-visible"
                 >
+                  <defs>
+                    <linearGradient id="logo-shell" x1="12" y1="8" x2="52" y2="56">
+                      <stop stopColor="#06111d" />
+                      <stop offset="1" stopColor="#010409" />
+                    </linearGradient>
+                    <filter id="logo-green-glow" x="-40%" y="-40%" width="180%" height="180%">
+                      <feGaussianBlur stdDeviation="2.6" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <polygon
+                    points="32 4 56 18 56 46 32 60 8 46 8 18"
+                    fill="url(#logo-shell)"
+                    stroke="#00A3FF"
+                    strokeWidth="2.25"
+                    strokeLinejoin="round"
+                  />
                   <g
                     fill="none"
                     stroke="#00A3FF"
-                    strokeWidth="1.15"
-                    opacity="0.36"
+                    strokeWidth="1"
+                    opacity="0.18"
                   >
-                    <path d="M8 19h10l5 8-5 8H8l-5-8z" />
-                    <path d="M28 9h10l5 8-5 8H28l-5-8z" />
-                    <path d="M43 28h10l5 8-5 8H43l-5-8z" />
-                    <path d="M17 38h10l5 8-5 8H17l-5-8z" />
+                    <path d="M17 20h10l5 8-5 8H17l-5-8z" />
+                    <path d="M34 16h10l5 8-5 8H34l-5-8z" />
+                    <path d="M29 34h10l5 8-5 8H29l-5-8z" />
                   </g>
                   <path
-                    d="M14 20 H25 L34 49 L51 15"
+                    d="M15 20 H25 L32 45 L48 17"
                     fill="none"
                     stroke="#34f985"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth="6.8"
+                    strokeWidth="5.4"
+                    filter="url(#logo-green-glow)"
                   />
                   <path
-                    d="M14 20 H25 L34 49 L51 15"
+                    d="M15 20 H25 L32 45 L48 17"
                     fill="none"
                     stroke="#a7ffc8"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth="2.2"
-                    opacity="0.75"
+                    strokeWidth="1.7"
+                    opacity="0.82"
                   />
                   {[
-                    ["44", "22", "55"],
-                    ["41", "29", "58"],
-                    ["39", "36", "53"],
-                    ["36", "43", "48"],
+                    ["41", "27", "50"],
+                    ["39", "34", "48"],
+                    ["37", "41", "45"],
                   ].map(([x1, y, x2]) => (
                     <line
                       key={y}
@@ -146,8 +168,9 @@ export default async function LandingPage() {
                       y2={y}
                       stroke="#34f985"
                       strokeLinecap="round"
-                      strokeWidth="4"
-                      opacity="0.92"
+                      strokeWidth="3.2"
+                      opacity="0.86"
+                      filter="url(#logo-green-glow)"
                     />
                   ))}
                 </svg>
@@ -169,7 +192,7 @@ export default async function LandingPage() {
               <span>Ship</span>
             </div>
 
-            <GitHubButton label="Start" variant="dark" />
+            <GitHubButton label="Start" variant="dark" disabled={!isGitHubConfigured} />
           </nav>
 
           <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
@@ -191,7 +214,7 @@ export default async function LandingPage() {
               </p>
 
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <GitHubButton />
+                <GitHubButton disabled={!isGitHubConfigured} />
                 <a
                   href="#overview"
                   className="inline-flex h-12 items-center justify-center rounded-md border border-emerald-300/20 bg-emerald-300/10 px-5 font-mono text-sm font-semibold uppercase tracking-wide text-emerald-50 backdrop-blur-md transition hover:bg-emerald-300/15"
@@ -327,8 +350,17 @@ export default async function LandingPage() {
             entry points, and the context contributors need before making
             changes.
           </p>
-          <div className="mt-9">
-            <GitHubButton label="Get started with GitHub" />
+          <div className="mt-9 flex flex-col items-center gap-3">
+            <GitHubButton
+              label="Get started with GitHub"
+              disabled={!isGitHubConfigured}
+            />
+            {!isGitHubConfigured ? (
+              <p className="max-w-md font-mono text-xs leading-6 text-amber-100/70">
+                Add AUTH_GITHUB_ID and AUTH_GITHUB_SECRET to .env.local, then
+                restart the dev server.
+              </p>
+            ) : null}
           </div>
         </div>
       </section>
