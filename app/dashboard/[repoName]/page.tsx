@@ -3,8 +3,7 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import DashboardNav from "@/components/DashboardNav"
 import FileTreeRoot from "@/components/FileTreeRoot"
-import CanvasPreview from "@/components/CanvasPreview"
-import MascotPanel from "@/components/MascotPanel"
+import CanvasWorkspace from "@/components/canvas/CanvasWorkspace"
 import { fetchRepoTree, fetchAuthenticatedUser } from "@/lib/github"
 import { parseTree } from "@/utils/parseTree"
 
@@ -57,15 +56,10 @@ export default async function RepoPage({
           </div>
         </aside>
 
-        {/* Center Workspace — canvas engine */}
+        {/* Center Workspace — canvas engine + sliding code pane */}
         <main className="flex-1 relative overflow-hidden">
-          <CanvasPreview owner={ownerLogin} repo={decoded} />
+          <CanvasWorkspace owner={ownerLogin} repo={decoded} />
         </main>
-
-        {/* Right Sidebar — mascot + inspector */}
-        <aside className="w-56 shrink-0 flex flex-col border-l border-border-muted bg-bg-panel overflow-hidden">
-          <MascotPanel />
-        </aside>
 
       </div>
     </div>

@@ -4,8 +4,8 @@ import { useCallback, useEffect, useImperativeHandle, forwardRef, useMemo, useRe
 import {
   ReactFlow,
   Background,
-  Controls,
   MiniMap,
+  Panel,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -22,6 +22,7 @@ import { useGraphStore } from "@/store/useGraphStore"
 import { useCanvasStore } from "@/store/useCanvasStore"
 import { layoutGraph } from "@/utils/layout"
 import IsolationOverlay from "./IsolationOverlay"
+import DescriptionModal from "./DescriptionModal"
 import SearchBar from "./SearchBar"
 import ProjectNode from "@/components/nodes/ProjectNode"
 import FolderNode from "@/components/nodes/FolderNode"
@@ -47,6 +48,11 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   const storeEdges = useGraphStore((s) => s.edges)
   const setZoomLevel = useGraphStore((s) => s.setZoomLevel)
   const zoomLevel = useGraphStore((s) => s.zoomLevel)
+  const layoutLocked = useGraphStore((s) => s.layoutLocked)
+  const toggleLayoutLocked = useGraphStore((s) => s.toggleLayoutLocked)
+  const isCodePaneOpen = useGraphStore((s) => s.isCodePaneOpen)
+  // The applied semantic-zoom tier (frozen by the store while layout is locked).
+  const effectiveTier = useGraphStore((s) => s.appliedZoomTier)
   const setStoreNodes = useGraphStore((s) => s.setNodes)
   const isIsolationMode = useGraphStore((s) => s.isIsolationMode)
 
@@ -55,16 +61,12 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<GraphNodeData>>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
 
-  const { setCenter, getNode, fitView } = useReactFlow()
+  const { setCenter, getNode, fitView, zoomIn, zoomOut } = useReactFlow()
 
   // When the sidebar selection changes we want to reset the canvas to a fresh
   // fitted view. The actual fitView() runs in the layout effect below, once the
   // new graph has been laid out.
   const fitPendingRef = useRef(false)
-
-  // Only the zoom *tier* matters for visibility — depend on that, not the raw
-  // (continuously changing) zoom value, so dagre doesn't re-run every frame.
-  const zoomTier = zoomLevel >= 1.2 ? 2 : zoomLevel >= 0.6 ? 1 : 0
 
   // Compute the visible node set and lay it out with dagre. Re-runs only when
   // the graph, the zoom tier, or isolation state changes — never on hover.
@@ -74,8 +76,8 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
       if (isIsolationMode) return true
       if (k !== "function" && k !== "variable") return true
       // Functions/variables are revealed purely by zooming in.
-      if (k === "function") return zoomTier >= 1
-      return zoomTier >= 2 // variable
+      if (k === "function") return effectiveTier >= 1
+      return effectiveTier >= 2 // variable
     })
 
     const visibleIds = new Set(visible.map((n) => n.id))
@@ -92,7 +94,7 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
       fitPendingRef.current = false
       requestAnimationFrame(() => fitView({ duration: 600, padding: 0.2 }))
     }
-  }, [storeNodes, storeEdges, zoomTier, isIsolationMode, setNodes, setEdges, fitView])
+  }, [storeNodes, storeEdges, effectiveTier, isIsolationMode, setNodes, setEdges, fitView])
 
   useOnViewportChange({
     onChange: useCallback(
@@ -106,6 +108,18 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   useEffect(() => {
     fitPendingRef.current = true
   }, [activeNode])
+
+  // When the split code pane slides open/closed the canvas container resizes.
+  // Re-centre once the 300ms width animation settles. Skip the initial mount.
+  const codePaneMountedRef = useRef(false)
+  useEffect(() => {
+    if (!codePaneMountedRef.current) {
+      codePaneMountedRef.current = true
+      return
+    }
+    const t = setTimeout(() => fitView({ duration: 400, padding: 0.2 }), 320)
+    return () => clearTimeout(t)
+  }, [isCodePaneOpen, fitView])
 
   useImperativeHandle(ref, () => ({
     focusNode: (nodeId: string) => {
@@ -141,6 +155,7 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   return (
     <div className="relative w-full h-full">
       <IsolationOverlay />
+      <DescriptionModal />
       <SearchBar onFocus={handleFocusNode} />
 
       <ReactFlow
@@ -161,14 +176,93 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
         }}
       >
         <Background color="#141B24" gap={24} size={1} />
-        <Controls
-          showInteractive={false}
-          style={{
+        <Panel position="bottom-left" style={{ margin: 10 }}>
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
             background: "#090D14",
             border: "1px solid #141B24",
             borderRadius: 6,
-          }}
-        />
+            overflow: "hidden",
+          }}>
+            {[
+              {
+                title: "Zoom in",
+                onClick: () => zoomIn({ duration: 200 }),
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                  </svg>
+                ),
+              },
+              {
+                title: "Zoom out",
+                onClick: () => zoomOut({ duration: 200 }),
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 13H5v-2h14v2z"/>
+                  </svg>
+                ),
+              },
+              {
+                title: "Fit view",
+                onClick: () => fitView({ duration: 400, padding: 0.2 }),
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6z"/>
+                  </svg>
+                ),
+              },
+            ].map(({ title, onClick, icon }, i, arr) => (
+              <button
+                key={title}
+                title={title}
+                onClick={onClick}
+                style={{
+                  width: 26,
+                  height: 26,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: i < arr.length - 1 ? "1px solid #141B24" : "none",
+                  cursor: "pointer",
+                  color: "#6B7280",
+                }}
+              >
+                {icon}
+              </button>
+            ))}
+            {/* Divider before lock */}
+            <div style={{ height: 1, background: "#141B24" }} />
+            <button
+              onClick={toggleLayoutLocked}
+              title={layoutLocked ? "Unlock expand/collapse" : "Lock expand/collapse"}
+              style={{
+                width: 26,
+                height: 26,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: layoutLocked ? "#1a3a5c" : "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: layoutLocked ? "#00A3FF" : "#6B7280",
+              }}
+            >
+              {layoutLocked ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 1C9.24 1 7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2h-1V6c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v2H9V6c0-1.66 1.34-3 3-3zm0 9c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                </svg>
+              )}
+            </button>
+          </div>
+        </Panel>
         <MiniMap
           style={{
             background: "#090D14",
