@@ -11,6 +11,7 @@ const KIND_ICON: Record<NodeKind, string> = {
   file:   "□",
   function: "○",
   variable: "·",
+  tech: "◇",
 }
 
 const KIND_COLOR: Record<NodeKind, string> = {
@@ -19,6 +20,7 @@ const KIND_COLOR: Record<NodeKind, string> = {
   file:     "#00A3FF",
   function: "#00E676",
   variable: "#FFB300",
+  tech:     "#00E676",
 }
 
 interface SearchBarProps {

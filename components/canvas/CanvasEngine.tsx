@@ -34,6 +34,8 @@ import FolderNode from "@/components/nodes/FolderNode"
 import FileNode from "@/components/nodes/FileNode"
 import FunctionNode from "@/components/nodes/FunctionNode"
 import VariableNode from "@/components/nodes/VariableNode"
+import TechNode from "@/components/nodes/TechNode"
+import { buildTechStackGraph } from "@/utils/techGraph"
 import type { GraphNodeData, RiskLevel } from "@/components/nodes/types"
 
 export interface CanvasEngineHandle {
@@ -46,6 +48,7 @@ const nodeTypes: NodeTypes = {
   fileNode: FileNode as NodeTypes[string],
   functionNode: FunctionNode as NodeTypes[string],
   variableNode: VariableNode as NodeTypes[string],
+  techNode: TechNode as NodeTypes[string],
 }
 
 const edgeTypes: EdgeTypes = {
@@ -61,6 +64,8 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   const toggleLayoutLocked = useGraphStore((s) => s.toggleLayoutLocked)
   const isCodePaneOpen = useGraphStore((s) => s.isCodePaneOpen)
   const currentViewMode = useGraphStore((s) => s.currentViewMode)
+  const techStack = useGraphStore((s) => s.techStack)
+  const isTechMode = currentViewMode === "TECH_STACK"
   const riskCounts = useGraphStore((s) => s.riskCounts)
   const isSimulationActive = useGraphStore((s) => s.isSimulationActive)
   const simulationNodeStates = useGraphStore((s) => s.simulationNodeStates)
@@ -83,32 +88,45 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
   const fitPendingRef = useRef(false)
 
   // Compute the visible node set and lay it out with dagre. Re-runs only when
-  // the graph, the zoom tier, or isolation state changes — never on hover.
+  // the graph, the zoom tier, isolation, or view mode changes — never on hover.
   useEffect(() => {
-    const visible = storeNodes.filter((n) => {
-      const k = n.data.kind
-      if (isIsolationMode) return true
-      if (k !== "function" && k !== "variable") return true
-      // Functions/variables are revealed purely by zooming in.
-      if (k === "function") return effectiveTier >= 1
-      return effectiveTier >= 2 // variable
-    })
+    if (isTechMode) {
+      // Tech Stack lens: show the detected stack as a connected flow graph,
+      // independent of the file selection.
+      const { nodes: tNodes, edges: tEdges } = buildTechStackGraph(techStack)
+      setNodes(layoutGraph(tNodes, tEdges))
+      setEdges(tEdges)
+    } else {
+      const visible = storeNodes.filter((n) => {
+        const k = n.data.kind
+        if (isIsolationMode) return true
+        if (k !== "function" && k !== "variable") return true
+        // Functions/variables are revealed purely by zooming in.
+        if (k === "function") return effectiveTier >= 1
+        return effectiveTier >= 2 // variable
+      })
 
-    const visibleIds = new Set(visible.map((n) => n.id))
-    const visibleEdges = storeEdges.filter(
-      (e) => visibleIds.has(e.source) && visibleIds.has(e.target)
-    )
+      const visibleIds = new Set(visible.map((n) => n.id))
+      const visibleEdges = storeEdges.filter(
+        (e) => visibleIds.has(e.source) && visibleIds.has(e.target)
+      )
 
-    setNodes(layoutGraph(visible, visibleEdges))
-    setEdges(visibleEdges)
+      setNodes(layoutGraph(visible, visibleEdges))
+      setEdges(visibleEdges)
+    }
 
-    // After a sidebar selection rebuilds the graph, reset to a fresh fitted
-    // view (recenter + default zoom, collapsing functions/variables).
+    // After a sidebar selection or mode switch rebuilds the graph, reset to a
+    // fresh fitted view.
     if (fitPendingRef.current) {
       fitPendingRef.current = false
       requestAnimationFrame(() => fitView({ duration: 600, padding: 0.2 }))
     }
-  }, [storeNodes, storeEdges, effectiveTier, isIsolationMode, setNodes, setEdges, fitView])
+  }, [storeNodes, storeEdges, effectiveTier, isIsolationMode, isTechMode, techStack, setNodes, setEdges, fitView])
+
+  // Switching into/out of the Tech Stack lens swaps the entire graph — refit.
+  useEffect(() => {
+    fitPendingRef.current = true
+  }, [isTechMode])
 
   useOnViewportChange({
     onChange: useCallback(
@@ -209,7 +227,8 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
       <VulnerabilityModal />
       <ViewModeDock />
       <SearchBar onFocus={handleFocusNode} />
-      <SimulationToolbar />
+      {/* Simulation runs on the file graph — irrelevant in the Tech Stack lens */}
+      {!isTechMode && <SimulationToolbar />}
 
       <ReactFlow
         nodes={enrichedNodes}
@@ -318,6 +337,7 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
           </div>
         </Panel>
         <MiniMap
+          position="top-right"
           style={{
             background: "#090D14",
             border: "1px solid #141B24",
@@ -328,18 +348,30 @@ const CanvasInner = forwardRef<CanvasEngineHandle>(function CanvasInner(_props, 
             if (kind === "folder") return "#1E2A38"
             if (kind === "file") return "#00A3FF44"
             if (kind === "function") return "#00E67644"
+            if (kind === "tech") return "#00E67655"
             return "#FFB30044"
           }}
         />
       </ReactFlow>
 
-      {storeNodes.length === 0 && (
+      {!isTechMode && storeNodes.length === 0 && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none">
           <span className="font-mono text-xs text-text-muted uppercase tracking-widest">
             [ CANVAS ]
           </span>
           <p className="font-mono text-xs text-text-muted text-center leading-relaxed">
             Select a file or folder in the sidebar<br />to load it onto the graph.
+          </p>
+        </div>
+      )}
+
+      {isTechMode && techStack.length === 0 && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none">
+          <span className="font-mono text-xs text-text-muted uppercase tracking-widest">
+            [ TECH STACK ]
+          </span>
+          <p className="font-mono text-xs text-text-muted text-center leading-relaxed">
+            No tech stack detected for this repository.
           </p>
         </div>
       )}

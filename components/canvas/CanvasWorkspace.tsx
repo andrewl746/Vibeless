@@ -4,17 +4,19 @@ import { useEffect, useRef, useState } from "react"
 import CanvasPreview from "@/components/CanvasPreview"
 import CodePreviewPane from "@/components/canvas/CodePreviewPane"
 import { useGraphStore } from "@/store/useGraphStore"
+import type { TechItem } from "@/utils/techStack"
 
 interface CanvasWorkspaceProps {
   owner: string
   repo: string
   sha: string
+  techStack: TechItem[]
 }
 
 const MIN_PANE_PCT = 20
 const MAX_PANE_PCT = 75
 
-export default function CanvasWorkspace({ owner, repo, sha }: CanvasWorkspaceProps) {
+export default function CanvasWorkspace({ owner, repo, sha, techStack }: CanvasWorkspaceProps) {
   const isCodePaneOpen = useGraphStore((s) => s.isCodePaneOpen)
   const closeCodePane = useGraphStore((s) => s.closeCodePane)
 
@@ -66,7 +68,7 @@ export default function CanvasWorkspace({ owner, repo, sha }: CanvasWorkspacePro
         className={`relative h-full ${transition}`}
         style={{ width: isCodePaneOpen ? `${100 - paneWidth}%` : "100%" }}
       >
-        <CanvasPreview owner={owner} repo={repo} sha={sha} />
+        <CanvasPreview owner={owner} repo={repo} sha={sha} techStack={techStack} />
       </div>
 
       {/* Sliding code pane */}

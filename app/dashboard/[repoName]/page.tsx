@@ -5,8 +5,9 @@ import DashboardNav from "@/components/DashboardNav"
 import FileTreeRoot from "@/components/FileTreeRoot"
 import RepoRootButton from "@/components/RepoRootButton"
 import CanvasWorkspace from "@/components/canvas/CanvasWorkspace"
-import { fetchRepoTree, fetchAuthenticatedUser } from "@/lib/github"
+import { fetchRepoTree, fetchFileText, fetchAuthenticatedUser } from "@/lib/github"
 import { parseTree } from "@/utils/parseTree"
+import { detectTechStack } from "@/utils/techStack"
 
 export default async function RepoPage({
   params,
@@ -24,6 +25,12 @@ export default async function RepoPage({
 
   const { tree: rawTree, sha } = await fetchRepoTree(session.accessToken, ownerLogin, decoded)
   const tree = parseTree(rawTree)
+
+  const packageJson = await fetchFileText(session.accessToken, ownerLogin, decoded, "package.json")
+  const techStack = detectTechStack({
+    paths: rawTree.map((item) => item.path),
+    packageJson,
+  })
 
   return (
     <div className="flex flex-col h-screen bg-bg-deep overflow-hidden">
@@ -57,7 +64,7 @@ export default async function RepoPage({
 
         {/* Center Workspace — canvas engine + sliding code pane */}
         <main className="flex-1 relative overflow-hidden">
-          <CanvasWorkspace owner={ownerLogin} repo={decoded} sha={sha} />
+          <CanvasWorkspace owner={ownerLogin} repo={decoded} sha={sha} techStack={techStack} />
         </main>
 
       </div>

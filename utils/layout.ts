@@ -10,6 +10,7 @@ const SIZE: Record<NodeKind, { w: number; h: number }> = {
   file:     { w: 160, h: 76 },
   function: { w: 190, h: 48 },
   variable: { w: 80,  h: 80 },
+  tech:     { w: 150, h: 84 },
 }
 
 /**

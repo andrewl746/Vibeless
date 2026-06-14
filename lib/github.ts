@@ -43,6 +43,31 @@ export async function fetchRepoTree(
   return { tree: data.tree, sha: data.sha }
 }
 
+/** Fetch a single file's UTF-8 text via the contents API. Returns null if missing. */
+export async function fetchFileText(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  path: string,
+): Promise<string | null> {
+  const res = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
+      },
+      next: { revalidate: 60 },
+    },
+  )
+  if (!res.ok) return null
+  const data = (await res.json()) as { content?: string; encoding?: string }
+  if (data.encoding === "base64" && data.content) {
+    return Buffer.from(data.content.replace(/\n/g, ""), "base64").toString("utf-8")
+  }
+  return null
+}
+
 export interface GitHubRepo {
   id: number
   name: string

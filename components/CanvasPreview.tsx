@@ -6,12 +6,14 @@ import { useGraphStore } from "@/store/useGraphStore"
 import { buildGraphFromTree, computeImportGraph } from "@/utils/codeParser"
 import type { ScannedEntityMap } from "@/utils/codeScanner"
 import type { FileTreeNode } from "@/utils/parseTree"
+import type { TechItem } from "@/utils/techStack"
 import CanvasEngine from "./canvas/CanvasEngine"
 
 interface CanvasPreviewProps {
   owner: string
   repo: string
   sha: string
+  techStack: TechItem[]
 }
 
 function collectFilePaths(nodes: FileTreeNode[]): string[] {
@@ -26,7 +28,7 @@ function collectFilePaths(nodes: FileTreeNode[]): string[] {
   return paths
 }
 
-export default function CanvasPreview({ owner, repo, sha }: CanvasPreviewProps) {
+export default function CanvasPreview({ owner, repo, sha, techStack }: CanvasPreviewProps) {
   // Only state values that should *trigger* effects are subscribed; the store
   // actions are read via getState() inside effects so the dependency arrays stay
   // small and constant (a changing deps-array size breaks Fast Refresh / React).
@@ -37,6 +39,11 @@ export default function CanvasPreview({ owner, repo, sha }: CanvasPreviewProps) 
   // `activeNode` lives in a global store that survives client-side navigation
   // between repos, so on a repo change it still points at the OLD repo's node.
   const repoKey = `${owner}/${repo}`
+
+  // Publish the server-detected tech stack into the store for the Tech Stack lens.
+  useEffect(() => {
+    useGraphStore.getState().setTechStack(techStack)
+  }, [techStack])
 
   // On repo change, clear the selection + graph carried over from the old repo.
   useEffect(() => {
